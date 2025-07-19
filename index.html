@@ -523,21 +523,19 @@
     <label class="form-label" for="adminSelector">Modified By (Admin):</label>
     <select class="form-select" id="adminSelector" required>
         <option value="">Select Admin</option>
-        <option value="Soma Shankar Sir">Ranveer Sir</option>
-        <option value="Vinay Sir">Manish Sir</option>
-        <option value="Prasad Sir">Vasnath Sir</option>
-        <option value="Vamshi Sir">Anirudh Sir</option>
-        <option value="Rajeev Sir">Harish Sir</option>
-        <option value="Balaji Sir">Chakradhar Sir</option>
-        <option value="Gauri Shanker Sir">Aman Sir</option>
-        <option value="Sunil Sir">Rohit Sir</option>
-        <option value="Sunil Sir">Testing admin</option>
+        <option value="Soma Shankar Sir">Soma Shankar Sir</option>
+        <option value="Vinay Sir">Vinay Sir</option>
+        <option value="Prasad Sir">Prasad Sir</option>
+        <option value="Vamshi Sir">Vamshi Sir</option>
+        <option value="Rajeev Sir">Rajeev Sir</option>
+        <option value="Balaji Sir">Balaji Sir</option>
+        <option value="Gauri Shanker Sir">Gauri Shanker Sir</option>
+        <option value="Sunil Sir">Sunil Sir</option>
     </select>
 </div>
-<!-- NEW: Admin Name (Teacher Only) field -->
-<div class="mb-3" id="teacherAdminNameField" style="display: none;">
-    <label class="form-label" for="teacherAdminName">Admin Name (Teacher Only):</label>
-    <input type="text" class="form-control" id="teacherAdminName" placeholder="Enter your name"/>
+<div class="mb-3" id="adminNameContainer" style="display: none;">
+    <label class="form-label" for="adminNameInput">Admin Name (for Teachers):</label>
+    <input type="text" class="form-control" id="adminNameInput" placeholder="Enter Admin Name">
 </div>
 <div class="text-center mt-3">
 <button class="btn btn-primary btn-lg" type="submit">
@@ -1390,16 +1388,28 @@
             { id: "AF9841", room: "414/14", name: "ANUGU SWASTHIK REDDY", points: 0, floor: "4", active: true, class: "IX", section: "A" },
             { id: "AF3340", room: "414/15", name: "GUNDA GAGAN SAI", points: 0, floor: "4", active: true, class: "X", section: "C" },
             { id: "AF4538", room: "414/16", name: "RISHANKA JANAKB", points: 0, floor: "4", active: true, class: "IX", section: "B" },
-            
+            // Adding sample students for 2nd floor
+            { id: "AF2001", room: "201/1", name: "SECOND FLOOR STUDENT A", points: 120, floor: "2", active: true, class: "VIII", section: "A" },
+            { id: "AF2002", room: "201/2", name: "SECOND FLOOR STUDENT B", points: 90, floor: "2", active: true, class: "VIII", section: "B" },
+            { id: "AF2003", room: "201/3", name: "SECOND FLOOR STUDENT C", points: 75, floor: "2", active: true, class: "VII", section: "A" },
+            { id: "AF2004", room: "201/4", name: "SECOND FLOOR STUDENT D", points: 60, floor: "2", active: true, class: "VII", section: "B" },
+            { id: "AF2005", room: "201/5", name: "SECOND FLOOR STUDENT E", points: 45, floor: "2", active: true, class: "VIII", section: "A" },
+            { id: "AF2006", room: "201/6", name: "SECOND FLOOR STUDENT F", points: 30, floor: "2", active: true, class: "VIII", section: "B" },
+            { id: "AF2007", room: "201/7", name: "SECOND FLOOR STUDENT G", points: 15, floor: "2", active: true, class: "VII", section: "A" },
+            { id: "AF2008", room: "201/8", name: "SECOND FLOOR STUDENT H", points: -5, floor: "2", active: true, class: "VII", section: "B" }
         ];
+
+       // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Verify your config matches what's in Firebase console
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAsFiadkeL-__gF_Lb5VY2iap4DlatkaX4",
-  authDomain: "senior-data-researchinnovation.firebaseapp.com",
-  databaseURL: "https://senior-data-researchinnovation-default-rtdb.firebaseio.com",
-  projectId: "senior-data-researchinnovation",
-  storageBucket: "senior-data-researchinnovation.firebasestorage.app",
-  messagingSenderId: "587116206951",
-  appId: "1:587116206951:web:ddf6db02ecd19a63cf2dc2",
+  apiKey: "AIzaSyAtanJUJCZmcvGf_JS0ffKc1SlhMW8aWug",
+  authDomain: "gstatus-304a8.firebaseapp.com",
+  databaseURL: "https://gstatus-304a8-default-rtdb.firebaseio.com",
+  projectId: "gstatus-304a8",
+  storageBucket: "gstatus-304a8.firebasestorage.app",
+  messagingSenderId: "382807331706",
+  appId: "1:382807331706:web:c9e2a5236753e97580bcc3",
   measurementId: "G-97JXW80ZLY"
 };
       // Initialize Firebase
@@ -1412,7 +1422,6 @@ try {
   // Show user-friendly error message
   alert("Failed to connect to database. Please check your internet connection and try again.");
 }
-
 
 // Modify your loadStudentsFromFirebase function:
 function loadStudentsFromFirebase() {
@@ -1545,12 +1554,36 @@ function loadStudentsFromFirebase() {
             }
         }
 
+        // Global variable to store the user role
+        let currentUserRole = localStorage.getItem("userRole");
+
         // Initialize all event listeners
         function initializeEventListeners() {
             // Positive action dropdown
             document.getElementById('positiveAction').addEventListener('change', function() {
                 document.getElementById('examPercentage').style.display = this.value === 'exam' ? 'block' : 'none';
             });
+
+            // Show/hide Admin Name input based on user role
+            const adminSelector = document.getElementById('adminSelector');
+            const adminNameContainer = document.getElementById('adminNameContainer');
+            const adminNameInput = document.getElementById('adminNameInput');
+
+            // Function to update visibility and required status of adminNameInput
+            function updateAdminNameInputVisibility() {
+                if (currentUserRole === 'teacher') {
+                    adminNameContainer.style.display = 'block';
+                    adminNameInput.setAttribute('required', 'true');
+                    adminSelector.removeAttribute('required'); // Make adminSelector optional for teachers
+                } else {
+                    adminNameContainer.style.display = 'none';
+                    adminNameInput.removeAttribute('required');
+                    adminSelector.setAttribute('required', 'true'); // Make adminSelector required for others
+                }
+            }
+
+            // Call on initialization
+            updateAdminNameInputVisibility();
 
             // Points form submission
             document.getElementById('pointsForm').addEventListener('submit', async function(e) {
@@ -1560,7 +1593,7 @@ function loadStudentsFromFirebase() {
                 const negativeAction = document.querySelector('[name="negativeAction"]').value;
                 const percentageInput = document.getElementById('percentageInput').value;
                 let adminModifier = document.getElementById('adminSelector').value; // Get selected admin
-                const teacherAdminName = document.getElementById('teacherAdminName').value.trim(); // NEW: Get teacher admin name
+                const teacherAdminName = document.getElementById('adminNameInput').value.trim(); // Get teacher's admin name
                 const updateMessage = document.getElementById('updateMessage');
 
                 if (!selectedStudentIds.length) {
@@ -1572,20 +1605,18 @@ function loadStudentsFromFirebase() {
                     return;
                 }
 
-                // Determine the actual modifier based on user type and input
-                const currentUserRole = localStorage.getItem("userRole");
-                if (currentUserRole === "teacher") {
+                // NEW: Validate admin selection based on user role
+                if (currentUserRole === 'teacher') {
                     if (!teacherAdminName) {
                         updateMessage.classList.remove('alert-success');
                         updateMessage.classList.add('alert-danger');
-                        updateMessage.textContent = 'Please enter your name in the "Admin Name (Teacher Only)" field.';
+                        updateMessage.textContent = 'Please enter your Admin Name.';
                         updateMessage.style.display = 'block';
                         setTimeout(() => updateMessage.style.display = 'none', 3000);
                         return;
                     }
-                    adminModifier = teacherAdminName; // Use teacher's entered name
+                    adminModifier = teacherAdminName; // Use the typed name for teachers
                 } else {
-                    // For admin/incharge, adminSelector is already required by HTML
                     if (!adminModifier) {
                         updateMessage.classList.remove('alert-success');
                         updateMessage.classList.add('alert-danger');
@@ -1595,7 +1626,6 @@ function loadStudentsFromFirebase() {
                         return;
                     }
                 }
-
 
                 let points = 0;
                 let actionText = '';
@@ -2359,10 +2389,8 @@ function refreshRankings() {
             });
 
             // Sort students alphabetically by name for consistent display
-         
-              
-   
-         
+            filteredStudents.sort((a, b) => a.name.localeCompare(b.name));
+
             const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
             currentPage = Math.min(currentPage, totalPages > 0 ? totalPages : 1); // Adjust current page if it exceeds new total pages
 
@@ -2882,8 +2910,8 @@ function refreshRankings() {
 
         // Check user role and modify UI
         function checkUserRole() {
-          const role = localStorage.getItem("userRole");
-          if (role === "incharge" || role === "teacher") {
+          currentUserRole = localStorage.getItem("userRole"); // Set the global variable
+          if (currentUserRole === "incharge" || currentUserRole === "teacher") {
             // Hide admin-only tabs for incharge/teacher
             document.getElementById("rankings-tab").style.display = "none";
             document.getElementById("responses-tab").style.display = "none";
@@ -2892,43 +2920,13 @@ function refreshRankings() {
             // Show discipline related tabs
             document.getElementById("discipline-review-tab").style.display = "";
             document.getElementById("batch-discipline-tab").style.display = "";
-
-            // NEW: Show/hide admin name fields based on role
-            if (role === "teacher") {
-                document.getElementById("adminSelector").removeAttribute("required"); // Make dropdown optional for teachers
-                document.getElementById("adminSelector").style.display = "none"; // Hide dropdown for teachers
-                document.querySelector('label[for="adminSelector"]').style.display = "none"; // Hide label for dropdown
-                document.getElementById("teacherAdminNameField").style.display = "block"; // Show teacher name field
-                document.getElementById("teacherAdminName").setAttribute("required", "true"); // Make teacher name field required
-            } else { // incharge
-                document.getElementById("adminSelector").setAttribute("required", "true"); // Ensure dropdown is required for incharge
-                document.getElementById("adminSelector").style.display = "block"; // Show dropdown for incharge
-                document.querySelector('label[for="adminSelector"]').style.display = "block"; // Show label for dropdown
-                document.getElementById("teacherAdminNameField").style.display = "none"; // Hide teacher name field
-                document.getElementById("teacherAdminName").removeAttribute("required"); // Make teacher name field not required
-            }
-
-          } else { // admin
-            // Show all tabs for admin
-            document.getElementById("rankings-tab").style.display = "";
-            document.getElementById("responses-tab").style.display = "";
-            document.getElementById("student-management-tab").style.display = "";
-            document.getElementById("discipline-review-tab").style.display = "";
-            document.getElementById("batch-discipline-tab").style.display = "";
-
-            // Ensure admin selector is visible and required for admin
-            document.getElementById("adminSelector").setAttribute("required", "true");
-            document.getElementById("adminSelector").style.display = "block";
-            document.querySelector('label[for="adminSelector"]').style.display = "block";
-            document.getElementById("teacherAdminNameField").style.display = "none";
-            document.getElementById("teacherAdminName").removeAttribute("required");
           }
         }
 
         // Start the application when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-          checkUserRole();
-          initializeApp();
+          checkUserRole(); // Call checkUserRole first to set currentUserRole
+          initializeApp(); // initializeApp will then call initializeEventListeners
         });
     </script>
 <!-- Simple Login Modal -->
