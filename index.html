@@ -537,7 +537,7 @@
     .alert-warning {
         background-color: #fffde7;
         border-color: #ffe082;
-        color: #f57f17;
+        color: #f5f717;
     }
 
     /* Quick Stats */
@@ -832,6 +832,25 @@
                         <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">&#9733;</label>
                     </div>
                 </div>
+                <div class="mb-3">
+                    <label class="form-label" for="disciplineAdminSelector">Modified By (Incharge):</label>
+                    <select class="form-select" id="disciplineAdminSelector" title="Select the incharge who is making this point change.">
+                        <option value="">Select Incharge</option>
+                        <option value="Ranveer Sir">Ranveer Sir</option>
+                        <option value="Manish Sir">Manish Sir</option>
+                        <option value="Vasanth Sir">Vasnath Sir</option>
+                        <option value="Anirudh Sir">Anirudh Sir</option>
+                        <option value="Harish Sir">Harish Sir</option>
+                        <option value="Chakradhar Sir">Chakradhar Sir</option>
+                        <option value="Aman Sir">Aman Sir</option>
+                        <option value="Rohit Sir">Rohit Sir</option>
+                        <option value="Testing Admin">Testing admin</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="disciplineTeacherAdminName">Teacher's Name (if not an Incharge):</label>
+                    <input type="text" class="form-control" id="disciplineTeacherAdminName" placeholder="Enter Teacher's Name" title="Enter the name of the teacher making this point change, if applicable.">
+                </div>
                 <div class="text-center mt-3">
                     <button class="btn btn-primary btn-lg" type="submit" title="Click to submit the discipline rating for the selected students.">
                         <i class="fas fa-check-circle"></i> Submit Discipline Review
@@ -910,6 +929,25 @@
             <nav aria-label="Page navigation">
                 <ul class="pagination justify-content-center" id="batchDisciplinePagination"></ul>
             </nav>
+            <div class="mb-3">
+                <label class="form-label" for="batchDisciplineAdminSelector">Modified By (Incharge):</label>
+                <select class="form-select" id="batchDisciplineAdminSelector" title="Select the incharge who is making this point change.">
+                    <option value="">Select Incharge</option>
+                    <option value="Ranveer Sir">Ranveer Sir</option>
+                    <option value="Manish Sir">Manish Sir</option>
+                    <option value="Vasanth Sir">Vasnath Sir</option>
+                    <option value="Anirudh Sir">Anirudh Sir</option>
+                    <option value="Harish Sir">Harish Sir</option>
+                    <option value="Chakradhar Sir">Chakradhar Sir</option>
+                    <option value="Aman Sir">Aman Sir</option>
+                    <option value="Rohit Sir">Rohit Sir</option>
+                    <option value="Testing Admin">Testing admin</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="batchDisciplineTeacherAdminName">Teacher's Name (if not an Incharge):</label>
+                <input type="text" class="form-control" id="batchDisciplineTeacherAdminName" placeholder="Enter Teacher's Name" title="Enter the name of the teacher making this point change, if applicable.">
+            </div>
             <div class="text-center mt-4">
                 <button class="btn btn-primary btn-lg" id="saveBatchDisciplineRatings" title="Click to save all discipline ratings entered in the table.">
                     <i class="fas fa-save"></i> Save All Ratings
@@ -1026,7 +1064,7 @@
                         </div>
                         <div class="col-md-6">
                             <label for="dateFilter" class="form-label">Filter by Date:</label>
-                            <input type="date" id="dateFilter" class="form-control" title="Filter history records by a specific date.">
+                            <input type="date" class="form-control" id="dateFilter" title="Filter history records by a specific date.">
                         </div>
                     </div>
                     <button id="applyHistoryFilters" class="btn btn-primary" title="Apply the selected floor and date filters to the history.">Apply Filters</button>
@@ -1691,7 +1729,6 @@
             { id: "AF4538", room: "414/16", name: "RISHANKA JANAKB", points: 0, floor: "4", active: true, class: "IX", section: "B" },
             
         ];
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyAtanJUJCZmcvGf_JS0ffKc1SlhMW8aWug",
   authDomain: "gstatus-304a8.firebaseapp.com",
@@ -1987,6 +2024,8 @@ function loadStudentsFromFirebase() {
                 e.preventDefault();
                 const selectedStudentIds = Array.from(document.querySelectorAll('#searchResultsDiscipline input[name="selectedStudentsDiscipline"]:checked')).map(input => input.value);
                 const rating = document.querySelector('input[name="rating"]:checked');
+                const disciplineAdminSelector = document.getElementById('disciplineAdminSelector').value;
+                const disciplineTeacherAdminName = document.getElementById('disciplineTeacherAdminName').value.trim();
                 const disciplineUpdateMessage = document.getElementById('disciplineUpdateMessage');
 
                 if (!selectedStudentIds.length) {
@@ -2002,6 +2041,20 @@ function loadStudentsFromFirebase() {
                     disciplineUpdateMessage.classList.remove('alert-success');
                     disciplineUpdateMessage.classList.add('alert-danger');
                     disciplineUpdateMessage.textContent = 'Please select a star rating.';
+                    disciplineUpdateMessage.style.display = 'block';
+                    setTimeout(() => disciplineUpdateMessage.style.display = 'none', 3000);
+                    return;
+                }
+
+                let modifiedBy = '';
+                if (disciplineAdminSelector) {
+                    modifiedBy = disciplineAdminSelector;
+                } else if (disciplineTeacherAdminName) {
+                    modifiedBy = disciplineTeacherAdminName;
+                } else {
+                    disciplineUpdateMessage.classList.remove('alert-success');
+                    disciplineUpdateMessage.classList.add('alert-danger');
+                    disciplineUpdateMessage.textContent = 'Please select an Incharge or enter a Teacher\'s Name.';
                     disciplineUpdateMessage.style.display = 'block';
                     setTimeout(() => disciplineUpdateMessage.style.display = 'none', 3000);
                     return;
@@ -2025,7 +2078,8 @@ function loadStudentsFromFirebase() {
                                 studentId,
                                 name: student.name,
                                 action: actionText,
-                                pointsChanged: pointsAwarded
+                                pointsChanged: pointsAwarded,
+                                modifiedBy: modifiedBy
                             });
                         }
                     });
@@ -2531,13 +2585,13 @@ function refreshRankings() {
             if (searchQueryHistory) {
                 filteredHistory = filteredHistory.filter(entry => {
                     const name = entry.name ? entry.name.toLowerCase() : '';
-                    const studentId = entry.studentId ? entry.studentId.toLowerCase() : '';
+                    const id = entry.studentId ? entry.studentId.toLowerCase() : '';
                     const student = students.find(s => s.id === entry.studentId);
                     const studentClass = student ? student.class.toLowerCase() : '';
                     const section = student ? student.section.toLowerCase() : '';
 
                     let matchesSearch = false;
-                    if (name.includes(searchQueryHistory) || studentId.includes(searchQueryHistory)) {
+                    if (name.includes(searchQueryHistory) || id.includes(searchQueryHistory)) {
                         matchesSearch = true;
                     }
 
@@ -2766,7 +2820,7 @@ function refreshRankings() {
                 const section = student.section ? student.section.toLowerCase() : '';
 
                 let matchesSearch = false;
-                if (name.includes(searchQuery) || id.includes(searchQuery) || room.includes(searchQuery) || floor.includes(searchQuery)) {
+                if (name.includes(searchQuery) || id.includes(searchQuery) || room.includes(searchQuery) || floor.includes(searchQuery)) { // Corrected: floor.includes(searchQuery)
                     matchesSearch = true;
                 }
 
@@ -3095,11 +3149,27 @@ function refreshRankings() {
 
         async function saveBatchDisciplineRatings() {
             const batchDisciplineUpdateMessage = document.getElementById('batchDisciplineUpdateMessage');
+            const batchDisciplineAdminSelector = document.getElementById('batchDisciplineAdminSelector').value;
+            const batchDisciplineTeacherAdminName = document.getElementById('batchDisciplineTeacherAdminName').value.trim();
             const updatedStudents = [];
             const newHistoryEntries = [];
             const now = new Date();
             const date = now.toLocaleDateString('en-GB');
             const time = now.toLocaleTimeString('en-GB');
+
+            let modifiedBy = '';
+            if (batchDisciplineAdminSelector) {
+                modifiedBy = batchDisciplineAdminSelector;
+            } else if (batchDisciplineTeacherAdminName) {
+                modifiedBy = batchDisciplineTeacherAdminName;
+            } else {
+                batchDisciplineUpdateMessage.classList.remove('alert-success');
+                batchDisciplineUpdateMessage.classList.add('alert-danger');
+                batchDisciplineUpdateMessage.textContent = 'Please select an Incharge or enter a Teacher\'s Name.';
+                batchDisciplineUpdateMessage.style.display = 'block';
+                setTimeout(() => batchDisciplineUpdateMessage.style.display = 'none', 3000);
+                return;
+            }
 
             // Get all rows in the current view of the table
             const tableRows = document.querySelectorAll('#batchDisciplineTable tr');
@@ -3133,7 +3203,8 @@ function refreshRankings() {
                             studentId,
                             name: student.name,
                             action: actionText,
-                            pointsChanged: pointsAwarded
+                            pointsChanged: pointsAwarded,
+                            modifiedBy: modifiedBy
                         });
                     }
                 }
