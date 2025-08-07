@@ -4498,10 +4498,10 @@
 
 
             } else if (role === "incharge") {
-                // In-charge has access to all tabs except Student Management, History, Rankings, and Individual Data
+                // In-charge has access to all tabs except , History, Rankings, and 
                 const allowedTabs = [
                     "home-tab", "administration-tab", "batch-discipline-tab",
-                    "notes-tab" // Added notes-tab
+                    "notes-tab", "student-management-tab", "individual-data-tab" // Added notes-tab
                 ];
                 allowedTabs.forEach(tabId => {
                     const tabElement = document.getElementById(tabId);
