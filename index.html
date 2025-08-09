@@ -15,6 +15,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <!-- Firebase Auth SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary-color: #4a90e2; /* Softer blue */
@@ -39,6 +41,7 @@
             min-height: 100vh;
             font-size: 1.05rem; /* Slightly larger base font size */
             display: flex; /* For sidebar layout */
+            flex-direction: column; /* Allow footer to push to bottom */
         }
 
         .animated-background {
@@ -728,10 +731,12 @@
 
         /* Star rating styles */
         .star-rating {
-            display: inline-block;
+            display: flex; /* Use flexbox to keep stars in one line */
+            flex-direction: row-reverse; /* Reverse order for RTL stars */
+            justify-content: flex-end; /* Align stars to the right */
             font-size: 1.8rem; /* Reduced font size for mobile */
-            direction: rtl;
             unicode-bidi: bidi-override;
+            white-space: nowrap; /* Prevent wrapping */
         }
         .star-rating input[type="radio"] {
             display: none;
@@ -1100,6 +1105,27 @@
             font-weight: bold;
             display: none; /* Hidden by default */
         }
+
+        /* Footer Styles */
+        .footer {
+            background-color: var(--secondary-color);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: auto; /* Pushes footer to the bottom */
+            width: 100%;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer p {
+            margin-bottom: 5px;
+        }
+
+        .footer .trademark {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
     </style>
 </head>
 <body>
@@ -1177,6 +1203,11 @@
                 <li class="nav-item" role="presentation">
                     <a class="nav-link" data-bs-toggle="tab" href="#notes" id="notes-tab" role="tab" title="Manage your personal notes">
                         <i class="fas fa-clipboard"></i> Notes
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" data-bs-toggle="tab" href="#adjudicators" id="adjudicators-tab" role="tab" title="Track incharge activity and floor statistics">
+                        <i class="fas fa-gavel"></i> Adjudicators
                     </a>
                 </li>
             </ul>
@@ -1388,7 +1419,6 @@
                                                 <option value="5">Helping others (+5)</option>
                                                 <option value="10">Room cleaning competition 1st (+10)</option>
                                                 <option value="7">Room cleaning competition 2nd (+7)</option>
-                                                <option value="5">Room cleaning competition 3rd (+5)</option>
                                                 <option value="15">Winners in competition (+15)</option>
                                                 <option value="10">Good discipline (+10)</option>
                                                 <option value="5">Completing homework on time (+5)</option>
@@ -1424,7 +1454,6 @@
                                                 <option value="">Select a negative action</option>
                                                 <option value="-5">No Dress code (-5)</option>
                                                 <option value="-3">Incomplete homework (-3)</option>
-                                                <option value="-3">Late from playing bell (-3)</option>
                                                 <option value="-10">Absent to school (-10)</option>
                                                 <option value="-7">No room cleaning (-7)</option>
                                                 <option value="-10">Late for prayer (-10)</option>
@@ -1773,11 +1802,17 @@
                                         <input type="text" class="form-control" id="historyModifiedByFilter" placeholder="e.g., ranveer@example.com, Ranveer Sir" title="Filter history records by the email or name of the modifier." aria-label="Filter history by modifier"/>
                                     </div>
                                 </div>
+                                <div class="row mb-3">
+                                    <!-- Removed the inchargeGraphFilter dropdown -->
+                                </div>
                                 <button type="button" id="applyHistoryFilters" class="btn btn-primary" title="Apply the selected floor and date filters to the history.">Apply Filters</button>
                                 <button type="button" id="resetHistoryFilters" class="btn btn-secondary ms-2" title="Clear all history filters and show all records.">Reset Filters</button>
                                 <!-- NEW EXPORT BUTTON -->
                                 <button type="button" class="btn btn-success ms-2" id="exportHistory" title="Download the current history records as an Excel file.">
                                     <i class="fas fa-file-excel"></i> Export to Excel
+                                </button>
+                                <button type="button" class="btn btn-info ms-2" id="exportHistoryGraph" title="Export filtered history to graph">
+                                    <i class="fas fa-chart-bar"></i> Export to Graph
                                 </button>
                             </div>
                             <div class="search-container">
@@ -1823,7 +1858,7 @@
                                     </div>
                                     <div class="col-md-8">
                                         <label for="newStudentName" class="form-label"><i class="fas fa-user"></i> Full Name <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="newStudentName" required title="Enter the full name of the new student." aria-label="New student full name"/>
+                                        <input type="text" class="form-control" id="newStudentName" required placeholder="Enter your full name" autocomplete="name"/>
                                     </div>
                                     <div class="col-md-3">
                                         <label for="newStudentRoom" class="form-label"><i class="fas fa-door-open"></i> Room <span class="text-danger">*</span></label>
@@ -1866,6 +1901,12 @@
                             <div class="search-container mb-3">
                                 <input class="form-control" id="searchQueryStudentManagement" placeholder="Search by Name, ID, Room, Floor, Class (e.g., X), or Section (e.g., A). You can also search by Class-Section (e.g., X-A)..." type="text" title="Search for existing students to manage." aria-label="Search existing students"/>
                                 <i class="fas fa-search search-icon"></i>
+                            </div>
+                            <div class="text-end mb-3">
+                                <button type="button" class="btn btn-info" id="importStudentsExcelBtn" title="Import student data from an Excel file.">
+                                    <i class="fas fa-file-import"></i> Import from Excel
+                                </button>
+                                <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
                             </div>
                             <div class="table-responsive table-responsive-stack">
                                 <table class="table table-hover table-bordered">
@@ -1992,9 +2033,80 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Adjudicators Tab -->
+                <div class="tab-pane fade" id="adjudicators" role="tabpanel">
+                    <h3><i class="fas fa-gavel"></i> Adjudicator & Floor Statistics</h3>
+
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-users"></i> Incharge Activity Rankings
+                        </div>
+                        <div class="card-body">
+                            <div class="text-end mb-3">
+                                <button type="button" class="btn btn-info ms-2" id="exportInchargeGraph" title="Export incharge activity to graph">
+                                    <i class="fas fa-chart-bar"></i> Export to Graph
+                                </button>
+                            </div>
+                            <div class="table-responsive table-responsive-stack">
+                                <table class="table table-hover table-bordered">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th><i class="fas fa-sort-numeric-up-alt"></i> Rank</th>
+                                            <th><i class="fas fa-user-tie"></i> Incharge Name</th>
+                                            <th><i class="fas fa-envelope"></i> Email</th>
+                                            <th><i class="fas fa-plus-circle"></i> Positive Entries</th>
+                                            <th><i class="fas fa-minus-circle"></i> Negative Entries</th>
+                                            <th><i class="fas fa-list-alt"></i> Total Entries</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inchargeRankingsTable">
+                                        <!-- Incharge data will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <i class="fas fa-building"></i> Floor Statistics
+                        </div>
+                        <div class="card-body">
+                            <div class="text-end mb-3">
+                                <button type="button" class="btn btn-info ms-2" id="exportFloorGraph" title="Export floor statistics to graph">
+                                    <i class="fas fa-chart-bar"></i> Export to Graph
+                                </button>
+                            </div>
+                            <div class="table-responsive table-responsive-stack">
+                                <table class="table table-hover table-bordered">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th><i class="fas fa-building"></i> Floor</th>
+                                            <th><i class="fas fa-users"></i> Total Students</th>
+                                            <th><i class="fas fa-coins"></i> Average Points</th>
+                                            <th><i class="fas fa-plus-circle"></i> Total Positive Entries</th>
+                                            <th><i class="fas fa-minus-circle"></i> Total Negative Entries</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="floorStatisticsTable">
+                                        <!-- Floor statistics will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Research & Innovation Committee X GSTATUS Committee 2025-2026</p>
+        <p>&copy; All Rights Reserved</p>
+        <p class="trademark">Trademark : SGIS HYH</p>
+    </footer>
 
     <!-- Rank Changer Modal -->
     <div class="modal fade" id="rankChangerModal" tabindex="-1" aria-labelledby="rankChangerModalLabel" aria-hidden="true">
@@ -2142,6 +2254,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // --- UTILITY FUNCTIONS ---
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        }
+
         // --- AUTHENTICATION LOGIC (from auth.html) ---
         const CODES = {
             'DRIPLITE': 'admin',
@@ -2200,7 +2322,8 @@
                 sessionStorage.setItem('currentUser', JSON.stringify(currentUserData));
                 loginError.style.display = 'none';
                 alert('Login successful!');
-                await initializeApp(); // Initialize dashboard after successful login
+                // initializeApp will be called by onAuthStateChanged listener
+                // await initializeApp(); // Removed explicit call here
                 updateUserInfo(currentUserData); // Update sidebar and show dashboard
             } catch (error) {
                 console.error("Firebase Login Error:", error);
@@ -2244,7 +2367,8 @@
                 sessionStorage.setItem('currentUser', JSON.stringify(currentUserData));
 
                 alert('Registration successful! You are now logged in as a Teacher.');
-                await initializeApp(); // Initialize dashboard after successful registration
+                // initializeApp will be called by onAuthStateChanged listener
+                // await initializeApp(); // Removed explicit call here
                 updateUserInfo(currentUserData); // Update sidebar and show dashboard
             } catch (error) {
                 console.error("Firebase Registration Error:", error);
@@ -2286,7 +2410,8 @@
                 sessionStorage.setItem('currentUser', JSON.stringify(currentUserData));
                 loginError.style.display = 'none';
                 alert('Google Sign-in successful!');
-                await initializeApp();
+                // initializeApp will be called by onAuthStateChanged listener
+                // await initializeApp(); // Removed explicit call here
                 updateUserInfo(currentUserData);
             } catch (error) {
                 console.error("Google Sign-In Error:", error);
@@ -2366,8 +2491,8 @@
         });
 
         // --- DASHBOARD LOGIC (from dashboard.html) ---
-        const allStudents = []; // This remains empty as per original dashboard.html
-       const firebaseConfig = {
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
   apiKey: "AIzaSyAtanJUJCZmcvGf_JS0ffKc1SlhMW8aWug",
   authDomain: "gstatus-304a8.firebaseapp.com",
   databaseURL: "https://gstatus-304a8-default-rtdb.firebaseio.com",
@@ -2377,7 +2502,6 @@
   appId: "1:382807331706:web:c9e2a5236753e97580bcc3",
   measurementId: "G-97JXW80ZLY"
 };
-
         let firebaseApp;
         try {
             firebaseApp = firebase.initializeApp(firebaseConfig);
@@ -2388,30 +2512,10 @@
             alert("Failed to connect to database. Please check your internet connection and try again.");
         }
 
-        function loadStudentsFromFirebase() {
-            showLoading();
-            return database.ref('students').once('value')
-                .then(snapshot => {
-                    if (!snapshot.exists()) {
-                        console.log("No data available in Firebase, using default students.");
-                        return allStudents;
-                    }
-                    const data = snapshot.val();
-                    return Array.isArray(data) ? data : Object.values(data);
-                })
-                .catch(error => {
-                    console.error("Error loading students from Firebase:", error);
-                    return allStudents;
-                })
-                .finally(() => {
-                    hideLoading();
-                });
-        }
-
-        let students = [];
-        let responseHistory = [];
-        let notes = []; // New array for personal notes
-        let publicNotes = []; // New array for public notes
+        let students = []; // Local array to hold student data
+        let responseHistory = []; // Local array to hold history data
+        let notes = []; // Local array for personal notes
+        let publicNotes = []; // Local array for public notes
         const database = firebase.database();
 
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -2424,7 +2528,7 @@
         let currentUserUid = null; // Store UID for Firebase operations
 
         let recentModifications = {};
-        const COOLDOWN_DURATION_MS = 10 * 60 * 1000;
+        const COOLDOWN_DURATION_MS = 10 * 60 * 1000; // 10 minutes
         const MAX_MODIFICATIONS_PER_STUDENT = 2;
 
         function showLoading() {
@@ -2435,51 +2539,58 @@
             loadingOverlay.style.display = 'none';
         }
 
-        function saveStudentsToFirebase(students) {
+        // Function to save ALL students (used for initial setup or Excel import)
+        // This will overwrite the entire 'students' node in Firebase
+        async function saveAllStudentsToFirebase(studentsArray) {
             showLoading();
-            return database.ref('students').set(students)
+            const studentsObject = {};
+            studentsArray.forEach(student => {
+                studentsObject[student.id] = student;
+            });
+            return database.ref('students').set(studentsObject)
                 .then(() => {
-                    console.log("Students saved to Firebase");
+                    console.log("All students saved to Firebase (full overwrite)");
                     hideLoading();
                 })
                 .catch(error => {
-                    console.error("Error saving students:", error);
+                    console.error("Error saving all students:", error);
                     hideLoading();
                     throw error;
                 });
         }
 
-        function saveHistoryToFirebase(history) {
+        // Function to update a single student's data
+        async function updateStudentInFirebase(studentId, updatedFields) {
             showLoading();
-            return database.ref('history').set(history)
+            return database.ref('students/' + studentId).update(updatedFields)
                 .then(() => {
-                    console.log("History saved to Firebase");
+                    console.log(`Student ${studentId} updated in Firebase`);
                     hideLoading();
                 })
                 .catch(error => {
-                    console.error("Error saving history:", error);
+                    console.error(`Error updating student ${studentId}:`, error);
                     hideLoading();
                     throw error;
                 });
         }
 
-        function loadHistoryFromFirebase() {
+        // Function to add a single history entry
+        async function addHistoryEntryToFirebase(entry) {
             showLoading();
-            return database.ref('history').once('value')
-                .then(snapshot => {
-                    const data = snapshot.val();
+            return database.ref('history').push(entry)
+                .then(() => {
+                    console.log("History entry added to Firebase");
                     hideLoading();
-                    return data || [];
                 })
                 .catch(error => {
-                    console.error("Error loading history:", error);
+                    console.error("Error adding history entry:", error);
                     hideLoading();
-                    return [];
+                    throw error;
                 });
         }
 
         // New functions for Personal Notes
-        function saveNotesToFirebase(notesData) {
+        async function saveNotesToFirebase(notesData) {
             showLoading();
             // Store notes under the user's UID
             return database.ref(`userNotes/${currentUserUid}`).set(notesData)
@@ -2494,24 +2605,8 @@
                 });
         }
 
-        function loadNotesFromFirebase() {
-            showLoading();
-            // Load notes from under the user's UID
-            return database.ref(`userNotes/${currentUserUid}`).once('value')
-                .then(snapshot => {
-                    const data = snapshot.val();
-                    hideLoading();
-                    return data || [];
-                })
-                .catch(error => {
-                    console.error("Error loading personal notes:", error);
-                    hideLoading();
-                    return [];
-                });
-        }
-
         // New functions for Public Notes
-        function savePublicNotesToFirebase(notesData) {
+        async function savePublicNotesToFirebase(notesData) {
             showLoading();
             return database.ref('publicNotes').set(notesData)
                 .then(() => {
@@ -2522,21 +2617,6 @@
                     console.error("Error saving public notes:", error);
                     hideLoading();
                     throw error;
-                });
-        }
-
-        function loadPublicNotesFromFirebase() {
-            showLoading();
-            return database.ref('publicNotes').once('value')
-                .then(snapshot => {
-                    const data = snapshot.val();
-                    hideLoading();
-                    return data || [];
-                })
-                .catch(error => {
-                    console.error("Error loading public notes:", error);
-                    hideLoading();
-                    return [];
                 });
         }
 
@@ -2554,7 +2634,12 @@
             }
         }
 
-        function checkAndApplyCooldown(modifierEmail, studentId) {
+        // Modified checkAndApplyCooldown to apply cooldown only for positive points
+        function checkAndApplyCooldown(modifierEmail, studentId, isPositive) {
+            if (!isPositive) {
+                // No cooldown for negative points
+                return { onCooldown: false };
+            }
             if (!recentModifications[modifierEmail]) {
                 recentModifications[modifierEmail] = {};
             }
@@ -2582,27 +2667,66 @@
             try {
                 showLoading();
 
-                const studentsData = await loadStudentsFromFirebase();
-                const historyData = await loadHistoryFromFirebase();
-                publicNotes = await loadPublicNotesFromFirebase(); // Load public notes
+                // Setup real-time listeners for students and history
+                database.ref('students').on('value', snapshot => {
+                    const data = snapshot.val();
+                    students = data ? Object.values(data) : []; // Convert object values to array
+                    console.log("Students data updated from Firebase (real-time)");
+                    document.getElementById('totalStudents').textContent = students.length;
+                    document.getElementById('activeStudents').textContent = students.filter(s => s.active).length;
+                    refreshRankings(); // Re-render rankings on student data change
+                    renderStudentManagementTable(); // Re-render student management table
+                    renderBatchDisciplineTable(); // Re-render batch discipline table
+                    hideLoading();
+                }, error => {
+                    console.error("Error listening to students data:", error);
+                    document.getElementById('dbStatus').textContent = 'Disconnected';
+                    document.getElementById('dbStatus').className = 'badge bg-danger';
+                    hideLoading();
+                });
+
+                database.ref('history').on('value', snapshot => {
+                    const data = snapshot.val();
+                    responseHistory = data ? Object.keys(data).map(key => ({ ...data[key], firebaseKey: key })) : [];
+                    responseHistory.sort((a, b) => { // Ensure history is sorted by most recent
+                        const dateA = new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`);
+                        const dateB = new Date(`${b.date.split('/').reverse().join('-')}T${b.time}`);
+                        return dateB - dateA;
+                    });
+                    console.log("History data updated from Firebase (real-time)");
+                    refreshResponses(); // Re-render responses on history data change
+                    renderAdjudicatorTables(); // Re-render adjudicator tables
+                    hideLoading();
+                }, error => {
+                    console.error("Error listening to history data:", error);
+                    hideLoading();
+                });
+
+                database.ref('publicNotes').on('value', snapshot => {
+                    const data = snapshot.val();
+                    publicNotes = data ? Object.values(data) : [];
+                    console.log("Public notes updated from Firebase (real-time)");
+                    renderPublicNotes(); // Re-render public notes
+                    hideLoading();
+                }, error => {
+                    console.error("Error listening to public notes:", error);
+                    hideLoading();
+                });
+
                 if (currentUserUid) { // Only load personal notes if a user is logged in
-                    notes = await loadNotesFromFirebase();
+                    database.ref(`userNotes/${currentUserUid}`).on('value', snapshot => {
+                        const data = snapshot.val();
+                        notes = data ? Object.values(data) : [];
+                        console.log("Personal notes updated from Firebase (real-time)");
+                        renderNotesTable(); // Re-render personal notes
+                        hideLoading();
+                    }, error => {
+                        console.error("Error listening to personal notes:", error);
+                        hideLoading();
+                    });
                 }
 
-                students = studentsData;
-                responseHistory = historyData;
 
-                if (students.length === 0) {
-                    console.log("No data available in Firebase, please add students via Student Management tab.");
-                }
-
-                refreshRankings();
-                refreshResponses();
-                renderStudentManagementTable();
-                renderNotesTable(); // Render personal notes table
-                renderPublicNotes(); // Render public notes
-                document.getElementById('totalStudents').textContent = students.length;
-                document.getElementById('activeStudents').textContent = students.filter(s => s.active).length;
                 document.getElementById('dbStatus').textContent = 'Connected';
                 document.getElementById('dbStatus').className = 'badge bg-success';
 
@@ -2634,7 +2758,11 @@
             document.getElementById('pointsForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 const updatePointsButton = document.getElementById('updatePointsBtn');
+
+                // IMMEDIATELY DISABLE THE BUTTON AND SHOW FEEDBACK
                 updatePointsButton.disabled = true;
+                updatePointsButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+
 
                 const selectedStudentIds = Array.from(document.querySelectorAll('#searchResultsPoints input[name="selectedStudents"]:checked')).map(input => input.value);
                 const positiveActionSelect = document.getElementById('positiveAction');
@@ -2647,12 +2775,14 @@
                 if (!selectedStudentIds.length) {
                     displayUpdateMessage('updateMessage', 'Please select at least one student.', 'danger');
                     updatePointsButton.disabled = false;
+                    updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                     return;
                 }
 
                 if (!adminEmailInput) {
                     displayUpdateMessage('updateMessage', 'Your email ID is missing. Please log in again.', 'danger');
                     updatePointsButton.disabled = false;
+                    updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                     return;
                 }
 
@@ -2664,22 +2794,27 @@
                 } else {
                     displayUpdateMessage('updateMessage', 'Please select an Incharge or enter a Teacher\'s Name.', 'danger');
                     updatePointsButton.disabled = false;
+                    updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                     return;
                 }
                 modifiedBy += ` (${adminEmailInput})`;
 
                 let points = 0;
                 let actionText = '';
+                let isPositive = false;
 
                 if (positiveActionSelect.value && negativeActionSelect.value) {
                     displayUpdateMessage('updateMessage', 'Please select only one action (positive or negative).', 'danger');
                     updatePointsButton.disabled = false;
+                    updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                     return;
                 } else if (positiveActionSelect.value) {
+                    isPositive = true;
                     // Role check for positive points
                     if (currentUserRole === 'teacher') {
                         displayUpdateMessage('updateMessage', 'Teachers can only deduct negative points.', 'danger');
                         updatePointsButton.disabled = false;
+                        updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                         return;
                     }
 
@@ -2688,6 +2823,7 @@
                         if (isNaN(percentage) || percentage < 0 || percentage > 100) {
                             displayUpdateMessage('updateMessage', 'Please enter a valid percentage (0-100).', 'danger');
                             updatePointsButton.disabled = false;
+                            updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                             return;
                         }
                         points = percentage >= 90 ? 20 : percentage >= 80 ? 15 : percentage >= 70 ? 10 : 5;
@@ -2697,12 +2833,14 @@
                         if (isNaN(customPoints) || customPoints <= 0) {
                             displayUpdateMessage('updateMessage', 'Please enter a valid positive custom point value.', 'danger');
                             updatePointsButton.disabled = false;
+                            updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                             return;
                         }
                         const customReason = document.getElementById('customPositiveReason').value.trim();
                         if (!customReason) {
                             displayUpdateMessage('updateMessage', 'Please provide a reason for custom positive points.', 'danger');
                             updatePointsButton.disabled = false;
+                            updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                             return;
                         }
                         points = customPoints;
@@ -2712,21 +2850,24 @@
                         actionText = positiveActionSelect.options[positiveActionSelect.selectedIndex].text;
                     }
                 } else if (negativeActionSelect.value) {
+                    isPositive = false;
                     if (negativeActionSelect.value === 'custom') {
                         const customPoints = parseInt(document.getElementById('customNegativePoints').value);
                         if (isNaN(customPoints) || customPoints >= 0) {
                             displayUpdateMessage('updateMessage', 'Please enter a valid negative custom point value (e.g., -15).', 'danger');
                             updatePointsButton.disabled = false;
+                            updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                             return;
                         }
                         const customReason = document.getElementById('customNegativeReason').value.trim();
                         if (!customReason) {
                             displayUpdateMessage('updateMessage', 'Please provide a reason for custom negative points.', 'danger');
                             updatePointsButton.disabled = false;
+                            updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                             return;
                         }
                         points = customPoints;
-                        actionText = `Custom Negative: ${customReason} (${customPoints})`;
+                        actionText = `Custom Negative: ${customReason} (${points})`;
                     } else {
                         points = parseInt(negativeActionSelect.value);
                         actionText = negativeActionSelect.options[negativeActionSelect.selectedIndex].text;
@@ -2734,6 +2875,7 @@
                 } else {
                     displayUpdateMessage('updateMessage', 'Please select an action.', 'danger');
                     updatePointsButton.disabled = false;
+                    updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                     return;
                 }
 
@@ -2741,7 +2883,7 @@
                 let cooldownMessage = '';
 
                 for (const studentId of selectedStudentIds) {
-                    const cooldownStatus = checkAndApplyCooldown(adminEmailInput, studentId);
+                    const cooldownStatus = checkAndApplyCooldown(adminEmailInput, studentId, isPositive);
                     if (cooldownStatus.onCooldown) {
                         onCooldownForAnyStudent = true;
                         const studentName = students.find(s => s.id === studentId)?.name || studentId;
@@ -2753,6 +2895,7 @@
                 if (onCooldownForAnyStudent) {
                     displayUpdateMessage('updateMessage', cooldownMessage, 'danger');
                     updatePointsButton.disabled = false;
+                    updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points';
                     return;
                 }
 
@@ -2762,27 +2905,34 @@
 
                 try {
                     const studentNames = [];
-                    selectedStudentIds.forEach(studentId => {
+                    const updatePromises = [];
+
+                    for (const studentId of selectedStudentIds) {
                         const student = students.find(s => s.id === studentId);
                         if (student) {
-                            student.points += points;
+                            const oldPoints = student.points;
+                            const newPoints = oldPoints + points;
                             studentNames.push(student.name);
-                            responseHistory.unshift({
+
+                            // Update student points in Firebase
+                            updatePromises.push(updateStudentInFirebase(student.id, { points: newPoints }));
+
+                            // Add history entry to Firebase
+                            updatePromises.push(addHistoryEntryToFirebase({
                                 date,
                                 time,
                                 studentId,
                                 name: student.name,
                                 action: actionText,
                                 pointsChanged: points,
+                                oldPoints: oldPoints, // Store old points for history
+                                newPoints: newPoints, // Store new points for history
                                 modifiedBy: modifiedBy
-                            });
+                            }));
                         }
-                    });
+                    }
 
-                    await Promise.all([
-                        saveStudentsToFirebase(students),
-                        saveHistoryToFirebase(responseHistory)
-                    ]);
+                    await Promise.all(updatePromises);
 
                     const studentNamesString = studentNames.join(', ');
                     displayUpdateMessage('updateMessage', `Done, added points for ${studentNamesString} by ${modifiedBy}.`, 'success');
@@ -2793,22 +2943,23 @@
                     document.getElementById('customNegativeInput').style.display = 'none';
                     document.getElementById('searchResultsPoints').innerHTML = '';
                     document.getElementById('searchQueryPoints').value = '';
-                    refreshRankings();
-                    refreshResponses();
+                    // No need to call refreshRankings() or refreshResponses() explicitly here
+                    // as the real-time listeners will handle the UI updates.
                 } catch (error) {
                     console.error("Error updating points:", error);
                     displayUpdateMessage('updateMessage', 'Error updating points. Please try again.', 'danger');
                 } finally {
                     updatePointsButton.disabled = false;
+                    updatePointsButton.innerHTML = '<i class="fas fa-save"></i> Update Points'; // Reset button text/icon
                 }
             });
 
             window.updateRemark = async function(studentId, newRemark) {
                 const student = students.find(s => s.id === studentId);
                 if (student) {
-                    student.remark = newRemark;
                     try {
-                        await saveStudentsToFirebase(students);
+                        await updateStudentInFirebase(student.id, { remark: newRemark });
+                        // UI will update via real-time listener
                     } catch (error) {
                         console.error("Error updating remark:", error);
                     }
@@ -2817,16 +2968,33 @@
             document.getElementById('exportRankings').addEventListener('click', exportToExcel);
             document.getElementById('exportHistory').addEventListener('click', exportHistoryToExcel); // New line for history export
 
-            handleSearch('searchQueryPoints', 'searchResultsPoints', 'selectedStudents');
-            document.getElementById('searchQueryRankings').addEventListener('input', refreshRankings);
-            document.getElementById('searchQueryHistory').addEventListener('input', filterResponses);
-            document.getElementById('searchQueryStudentManagement').addEventListener('input', renderStudentManagementTable);
-            handleSearch('searchQueryIndividualData', 'searchResultsIndividualData', 'selectedStudentIndividualData', true);
+            // Debounced search inputs
+            document.getElementById('searchQueryPoints').addEventListener('input', debounce(function() {
+                handleSearch('searchQueryPoints', 'searchResultsPoints', 'selectedStudents');
+            }, 300)); // 300ms debounce
 
-            document.getElementById('searchQueryBatchDiscipline').addEventListener('input', renderBatchDisciplineTable);
+            document.getElementById('searchQueryRankings').addEventListener('input', debounce(refreshRankings, 300)); // 300ms debounce
+            
+            // Modified history search to trigger filterResponses
+            document.getElementById('searchQueryHistory').addEventListener('input', debounce(function() {
+                const query = this.value.toLowerCase().trim();
+                const selectedFloor = document.getElementById('historyFloorFilter').value;
+                const selectedDate = document.getElementById('dateFilter').value;
+                // Pass the search query directly to filterResponses
+                filterResponses(selectedFloor, selectedDate, query);
+            }, 300)); // 300ms debounce
+
+            document.getElementById('searchQueryStudentManagement').addEventListener('input', debounce(renderStudentManagementTable, 300)); // 300ms debounce
+            
+            document.getElementById('searchQueryIndividualData').addEventListener('input', debounce(function() {
+                handleSearch('searchQueryIndividualData', 'searchResultsIndividualData', 'selectedStudentIndividualData', true);
+            }, 300)); // 300ms debounce
+
+            document.getElementById('searchQueryBatchDiscipline').addEventListener('input', debounce(renderBatchDisciplineTable, 300)); // 300ms debounce
             document.getElementById('batchDisciplineFloorFilter').addEventListener('change', renderBatchDisciplineTable);
-            document.getElementById('batchDisciplineClassFilter').addEventListener('input', renderBatchDisciplineTable);
-            document.getElementById('batchDisciplineSectionFilter').addEventListener('input', renderBatchDisciplineTable);
+            document.getElementById('batchDisciplineClassFilter').addEventListener('input', debounce(renderBatchDisciplineTable, 300)); // 300ms debounce
+            document.getElementById('batchDisciplineSectionFilter').addEventListener('input', debounce(renderBatchDisciplineTable, 300)); // 300ms debounce
+            
             document.getElementById('resetBatchDisciplineFilters').addEventListener('click', function() {
                 document.getElementById('searchQueryBatchDiscipline').value = '';
                 document.getElementById('batchDisciplineFloorFilter').value = 'all';
@@ -2837,6 +3005,7 @@
             document.getElementById('saveBatchDisciplineRatings').addEventListener('click', saveBatchDisciplineRatings);
             document.getElementById('batch-discipline-tab').addEventListener('shown.bs.tab', renderBatchDisciplineTable);
 
+            document.getElementById('rankings-tab').addEventListener('shown.bs.tab', refreshRankings); // Ensure rankings refresh when tab is shown
             document.getElementById('refreshRankings').addEventListener('click', refreshRankings);
             document.getElementById('gradeFilter').addEventListener('change', refreshRankings);
             document.getElementById('floorFilter').addEventListener('change', refreshRankings);
@@ -2922,7 +3091,7 @@
                 renderNotesTable();
             });
             document.getElementById('addNoteForm').addEventListener('submit', addNote);
-            document.getElementById('searchQueryNotes').addEventListener('input', renderNotesTable);
+            document.getElementById('searchQueryNotes').addEventListener('input', debounce(renderNotesTable, 300)); // 300ms debounce
             document.getElementById('notesList').addEventListener('click', async function(event) {
                 if (event.target.classList.contains('delete-note-btn')) {
                     const noteId = event.target.dataset.id;
@@ -3006,7 +3175,7 @@
                     await savePublicNotesToFirebase(publicNotes);
                     displayUpdateMessage('publicNoteMessage', `Public note ${noteId ? 'updated' : 'added'} successfully!`, 'success');
                     publicNoteModal.hide();
-                    renderPublicNotes();
+                    // renderPublicNotes() will be called by real-time listener
                 } catch (error) {
                     displayUpdateMessage('publicNoteMessage', `Error ${noteId ? 'updating' : 'adding'} public note. Please try again.`, 'danger');
                     console.error("Error saving public note:", error);
@@ -3027,11 +3196,10 @@
                 } else if (event.target.classList.contains('delete-public-note-btn')) {
                     const noteId = event.target.dataset.id;
                     if (confirm('Are you sure you want to delete this public note?')) {
-                        publicNotes = publicNotes.filter(n => n.id !== noteId);
                         try {
-                            await savePublicNotesToFirebase(publicNotes);
+                            await database.ref('publicNotes/' + noteId).remove(); // Directly remove from Firebase
                             displayUpdateMessage('publicNoteMessage', 'Public note deleted successfully!', 'success');
-                            renderPublicNotes();
+                            // renderPublicNotes() will be called by real-time listener
                         } catch (error) {
                             displayUpdateMessage('publicNoteMessage', 'Error deleting public note. Please try again.', 'danger');
                             console.error("Error deleting public note:", error);
@@ -3054,6 +3222,18 @@
                     }
                 });
             });
+
+            // Import Excel for Student Management
+            document.getElementById('importStudentsExcelBtn').addEventListener('click', function() {
+                document.getElementById('excelFileInput').click();
+            });
+
+            document.getElementById('excelFileInput').addEventListener('change', importStudentsFromExcel);
+
+            // Adjudicators tab event listeners
+            document.getElementById('adjudicators-tab').addEventListener('shown.bs.tab', renderAdjudicatorTables);
+            document.getElementById('exportInchargeGraph').addEventListener('click', generateInchargeGraph);
+            document.getElementById('exportFloorGraph').addEventListener('click', generateFloorGraph);
         }
 
         function parseClassSectionQuery(query) {
@@ -3061,11 +3241,11 @@
             let sectionQuery = '';
             const parts = query.split('-');
             if (parts.length === 2) {
-                classQuery = parts[0].trim();
-                sectionQuery = parts[1].trim();
+                classQuery = parts[0].trim().toLowerCase();
+                sectionQuery = parts[1].trim().toLowerCase();
             } else {
-                classQuery = query;
-                sectionQuery = query;
+                classQuery = query.toLowerCase();
+                sectionQuery = query.toLowerCase();
             }
             return { classQuery, sectionQuery };
         }
@@ -3124,93 +3304,89 @@
         }
 
         function handleSearch(inputId, resultsId, checkboxName, isSingleSelect = false) {
-            document.getElementById(inputId).addEventListener('input', function() {
-                const query = this.value.toLowerCase().trim();
-                const results = document.getElementById(resultsId);
-                if (!results) return; // Added check for results element existence
+            const query = document.getElementById(inputId).value.toLowerCase().trim();
+            const results = document.getElementById(resultsId);
+            if (!results) return;
 
-                results.innerHTML = '';
+            results.innerHTML = ''; // Clear previous results
 
-                if (inputId === 'searchQueryIndividualData') {
-                    const individualStudentDetailsCard = document.getElementById('individualStudentDetailsCard');
-                    if (individualStudentDetailsCard) { // Added check
-                        individualStudentDetailsCard.style.display = 'none';
-                    }
+            if (inputId === 'searchQueryIndividualData') {
+                const individualStudentDetailsCard = document.getElementById('individualStudentDetailsCard');
+                if (individualStudentDetailsCard) {
+                    individualStudentDetailsCard.style.display = 'none';
                 }
+            }
 
-                const today = new Date();
-                const dayOfWeek = today.getDay();
-                const isDisciplineTabSearch = (inputId === 'searchQueryDiscipline' || inputId === 'searchQueryBatchDiscipline');
+            if (query) {
+                const { classQuery, sectionQuery } = parseClassSectionQuery(query);
+                const fragment = document.createDocumentFragment(); // Use Document Fragment
 
-                if (query) {
-                    const { classQuery, sectionQuery } = parseClassSectionQuery(query);
+                const filteredStudents = students.filter(student => {
+                    const name = student.name ? student.name.toLowerCase() : '';
+                    const id = student.id ? student.id.toLowerCase() : '';
+                    const room = student.room ? student.room.toLowerCase() : '';
+                    const floor = student.floor ? student.floor.toString().toLowerCase() : '';
+                    const studentClass = student.class ? student.class.toLowerCase() : '';
+                    const section = student.section ? student.section.toLowerCase() : '';
 
-                    const filteredStudents = students.filter(student => {
-                        const name = student.name ? student.name.toLowerCase() : '';
-                        const id = student.id ? student.id.toLowerCase() : '';
-                        const room = student.room ? student.room.toLowerCase() : '';
-                        const floor = student.floor ? student.floor.toString().toLowerCase() : '';
-                        const studentClass = student.class ? student.class.toLowerCase() : '';
-                        const section = student.section ? student.section.toLowerCase() : '';
+                    let matches = false;
 
-                        let matches = false;
+                    if (name.includes(query) || id.includes(query) || room.includes(query) || floor.includes(query)) {
+                        matches = true;
+                    }
 
-                        if (name.includes(query) || id.includes(query) || room.includes(query) || floor.includes(query)) {
+                    if (classQuery && sectionQuery) {
+                        if (studentClass === classQuery && section === sectionQuery) {
                             matches = true;
                         }
-
-                        if (classQuery && sectionQuery) {
-                            if (studentClass === classQuery && section === sectionQuery) {
-                                matches = true;
-                            }
-                        } else if (classQuery) {
-                            if (studentClass.includes(classQuery)) {
-                                matches = true;
-                            }
-                        } else if (sectionQuery) {
-                             if (section.includes(sectionQuery)) {
-                                matches = true;
-                            }
+                    } else if (classQuery) {
+                        if (studentClass.includes(classQuery)) {
+                            matches = true;
                         }
-                        return matches;
-                    });
+                    } else if (sectionQuery) {
+                         if (section.includes(sectionQuery)) {
+                            matches = true;
+                        }
+                    }
+                    return matches;
+                });
 
-                    if (filteredStudents.length) {
-                        filteredStudents.forEach(student => {
-                            const studentCard = document.createElement('div');
-                            studentCard.className = 'col-md-6 mb-3';
-                            studentCard.innerHTML = `
-                                <div class="card student-card">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between">
-                                            <h5 class="card-title"><i class="fas fa-user"></i> ${student.name}</h5>
-                                            <span class="points-badge ${student.points >= 0 ? 'positive-points' : 'negative-points'}">
-                                                ${student.points > 0 ? '+' : ''}${student.points} pts
-                                            </span>
-                                        </div>
-                                        <p class="card-text mb-1"><strong><i class="fas fa-id-card"></i> ID:</strong> ${student.id}</p>
-                                        <p class="card-text mb-1"><strong><i class="fas fa-door-open"></i> Room:</strong> ${student.room} | <strong><i class="fas fa-building"></i> Floor:</strong> ${student.floor}</p>
-                                        <p class="card-text mb-2"><strong><i class="fas fa-chalkboard"></i> Class:</strong> ${student.class || 'N/A'} | <strong><i class="fas fa-tag"></i> Section:</strong> ${student.section || 'N/A'}</p>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="${(isSingleSelect || (isDisciplineTabSearch && dayOfWeek === 6)) ? 'radio' : 'checkbox'}"
-                                                name="${checkboxName}"
-                                                value="${student.id}"
-                                                id="${inputId}_${student.id}"
-                                                ${isSingleSelect ? `onclick="displayIndividualStudentData('${student.id}')"` : ''}>
-                                            <label class="form-check-label" for="${inputId}_${student.id}">
-                                                Select this student
-                                            </label>
-                                        </div>
+                if (filteredStudents.length) {
+                    filteredStudents.forEach(student => {
+                        const studentCard = document.createElement('div');
+                        studentCard.className = 'col-md-6 mb-3';
+                        studentCard.innerHTML = `
+                            <div class="card student-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <h5 class="card-title"><i class="fas fa-user"></i> ${student.name}</h5>
+                                        <span class="points-badge ${student.points >= 0 ? 'positive-points' : 'negative-points'}">
+                                            ${student.points > 0 ? '+' : ''}${student.points} pts
+                                        </span>
+                                    </div>
+                                    <p class="card-text mb-1"><strong><i class="fas fa-id-card"></i> ID:</strong> ${student.id}</p>
+                                    <p class="card-text mb-1"><strong><i class="fas fa-door-open"></i> Room:</strong> ${student.room} | <strong><i class="fas fa-building"></i> Floor:</strong> ${student.floor}</p>
+                                    <p class="card-text mb-2"><strong><i class="fas fa-chalkboard"></i> Class:</strong> ${student.class || 'N/A'} | <strong><i class="fas fa-tag"></i> Section:</strong> ${student.section || 'N/A'}</p>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="${isSingleSelect ? 'radio' : 'checkbox'}"
+                                            name="${checkboxName}"
+                                            value="${student.id}"
+                                            id="${inputId}_${student.id}"
+                                            ${isSingleSelect ? `onclick="displayIndividualStudentData('${student.id}')"` : ''}>
+                                        <label class="form-check-label" for="${inputId}_${student.id}">
+                                            Select this student
+                                        </label>
                                     </div>
                                 </div>
-                            `;
-                            results.appendChild(studentCard);
-                        });
-                    } else {
-                        results.innerHTML = '<div class="col-12"><div class="alert alert-info">No students found matching your search. Please try a different search term.</div></div>';
-                    }
+                            </div>
+                        `;
+                        fragment.appendChild(studentCard);
+                    });
+                    results.appendChild(fragment); // Append fragment once
+                } else {
+                    results.innerHTML = '<div class="col-12"><div class="alert alert-info">No students found matching your search. Please try a different search term.</div></div>';
                 }
-            });
+            }
         }
 
         function refreshRankings() {
@@ -3318,6 +3494,7 @@
             if (studentsToDisplayMain.length === 0) {
                 rankingsTable.innerHTML = '<tr><td colspan="11" class="text-center">No students found matching your criteria.</td></tr>';
             } else {
+                const fragment = document.createDocumentFragment();
                 let currentFloor = null;
                 let floorRank = 0;
                 studentsToDisplayMain.forEach((student) => {
@@ -3357,8 +3534,9 @@
                             </button>
                         </td>
                     `;
-                    rankingsTable.appendChild(row);
+                    fragment.appendChild(row);
                 });
+                rankingsTable.appendChild(fragment);
 
                 document.querySelectorAll('.change-rank-btn').forEach(button => {
                     button.addEventListener('click', function() {
@@ -3408,6 +3586,7 @@
             if (studentsToDisplayERank.length === 0) {
                 eRankingsTable.innerHTML = '<tr><td colspan="9" class="text-center">No students with negative points.</td></tr>';
             } else {
+                const fragment = document.createDocumentFragment();
                 studentsToDisplayERank.forEach((student, index) => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -3425,8 +3604,9 @@
                             </button>
                         </td>
                     `;
-                    eRankingsTable.appendChild(row);
+                    fragment.appendChild(row);
                 });
+                eRankingsTable.appendChild(fragment);
 
                 document.querySelectorAll('.change-e-rank-btn').forEach(button => {
                     button.addEventListener('click', function() {
@@ -3469,8 +3649,11 @@
                     const studentClass = student ? student.class.toLowerCase() : '';
                     const section = student ? student.section.toLowerCase() : '';
 
+                    // Check if the search query matches email ID in modifiedBy
+                    const modifiedByEmailMatch = entry.modifiedBy && entry.modifiedBy.toLowerCase().includes(searchQueryHistory);
+
                     let matchesSearch = false;
-                    if (name.includes(searchQueryHistory) || id.includes(searchQueryHistory)) {
+                    if (name.includes(searchQueryHistory) || id.includes(searchQueryHistory) || modifiedByEmailMatch) {
                         matchesSearch = true;
                     }
 
@@ -3506,12 +3689,13 @@
                 });
             }
 
-            if (selectedModifiedBy) {
-                const lowerCaseModifiedBy = selectedModifiedBy.toLowerCase();
-                filteredHistory = filteredHistory.filter(entry =>
-                    entry.modifiedBy && entry.modifiedBy.toLowerCase().includes(lowerCaseModifiedBy)
-                );
-            }
+            // This filter is now handled by the main searchQueryHistory if it's an email/name
+            // if (selectedModifiedBy) {
+            //     const lowerCaseModifiedBy = selectedModifiedBy.toLowerCase();
+            //     filteredHistory = filteredHistory.filter(entry =>
+            //         entry.modifiedBy && entry.modifiedBy.toLowerCase().includes(lowerCaseModifiedBy)
+            //     );
+            // }
 
             filteredHistory.sort((a, b) => {
                 const dateA = new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`);
@@ -3520,6 +3704,7 @@
             });
 
             responseTable.innerHTML = '';
+            const fragment = document.createDocumentFragment();
 
             if (filteredHistory.length === 0) {
                 responseTable.innerHTML = '<tr><td colspan="8" class="text-center">No history records found matching your search.</td></tr>';
@@ -3543,12 +3728,17 @@
                     <td data-label="Floor"><i class="fas fa-building"></i> ${studentFloor}</td>
                     <td data-label="Modified By"><i class="fas fa-user-tie"></i> ${entry.modifiedBy || 'N/A'}</td>
                 `;
-                responseTable.appendChild(row);
+                fragment.appendChild(row);
             });
+            responseTable.appendChild(fragment);
         }
 
         function refreshResponses() {
-            filterResponses();
+            // Call filterResponses with current filter values
+            const selectedFloor = document.getElementById('historyFloorFilter').value;
+            const selectedDate = document.getElementById('dateFilter').value;
+            const selectedModifiedBy = document.getElementById('historyModifiedByFilter').value; // This will be the email/name search
+            filterResponses(selectedFloor, selectedDate, selectedModifiedBy);
         }
 
         function exportToExcel() {
@@ -3630,6 +3820,10 @@
         async function addStudent(event) {
             event.preventDefault();
             const addStudentMessage = document.getElementById('addStudentMessage');
+            const addButton = event.submitter; // Get the button that triggered the submit
+            addButton.disabled = true;
+            addButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...';
+
 
             const newStudent = {
                 id: document.getElementById('newStudentId').value.trim(),
@@ -3644,57 +3838,52 @@
 
             if (!newStudent.id || !newStudent.name || !newStudent.room || !newStudent.floor) {
                 displayUpdateMessage('addStudentMessage', 'Please fill in all required fields (ID, Name, Room, Floor).', 'danger');
+                addButton.disabled = false;
+                addButton.innerHTML = '<i class="fas fa-plus"></i> Add Student';
                 return;
             }
 
+            // Check locally first (though Firebase set will handle true uniqueness)
             if (students.some(s => s.id === newStudent.id)) {
                 displayUpdateMessage('addStudentMessage', `Student with ID ${newStudent.id} already exists.`, 'danger');
+                addButton.disabled = false;
+                addButton.innerHTML = '<i class="fas fa-plus"></i> Add Student';
                 return;
             }
 
-            students.push(newStudent);
             try {
-                await saveStudentsToFirebase(students);
+                // Save individual student to Firebase using their ID as key
+                await database.ref('students/' + newStudent.id).set(newStudent);
                 displayUpdateMessage('addStudentMessage', `Student ${newStudent.name} added successfully!`, 'success');
                 document.getElementById('addStudentForm').reset();
-                renderStudentManagementTable();
-                document.getElementById('totalStudents').textContent = students.length;
-                document.getElementById('activeStudents').textContent = students.filter(s => s.active).length;
+                // UI will update via real-time listener
             } catch (error) {
                 displayUpdateMessage('addStudentMessage', 'Error adding student. Please try again.', 'danger');
                 console.error("Error adding student:", error);
+            } finally {
+                addButton.disabled = false;
+                addButton.innerHTML = '<i class="fas fa-plus"></i> Add Student';
             }
         }
 
         async function deleteStudent(studentId) {
-            const initialLength = students.length;
-            students = students.filter(s => s.id !== studentId);
-            if (students.length < initialLength) {
-                try {
-                    await saveStudentsToFirebase(students);
-                    alert(`Student ${studentId} deleted successfully.`);
-                    renderStudentManagementTable();
-                    refreshRankings();
-                    document.getElementById('totalStudents').textContent = students.length;
-                    document.getElementById('activeStudents').textContent = students.filter(s => s.active).length;
-                } catch (error) {
-                    alert('Error deleting student. Please try again.');
-                    console.error("Error deleting student:", error);
-                }
+            try {
+                await database.ref('students/' + studentId).remove(); // Remove directly from Firebase
+                alert(`Student ${studentId} deleted successfully.`);
+                // UI will update via real-time listener
+            } catch (error) {
+                alert('Error deleting student. Please try again.');
+                console.error("Error deleting student:", error);
             }
         }
 
         async function updateStudentDetails(studentId, field, newValue) {
-            const studentIndex = students.findIndex(s => s.id === studentId);
-            if (studentIndex > -1) {
-                students[studentIndex][field] = newValue;
-                try {
-                    await saveStudentsToFirebase(students);
-                    refreshRankings();
-                } catch (error) {
-                    alert(`Error updating ${field}. Please try again.`);
-                    console.error(`Error updating student ${field}:`, error);
-                }
+            try {
+                await updateStudentInFirebase(studentId, { [field]: newValue });
+                // UI will update via real-time listener
+            } catch (error) {
+                alert(`Error updating ${field}. Please try again.`);
+                console.error(`Error updating student ${field}:`, error);
             }
         }
 
@@ -3718,7 +3907,7 @@
                 const section = student.section ? student.section.toLowerCase() : '';
 
                 let matchesSearch = false;
-                if (name.includes(searchQuery) || id.includes(searchQuery) || room.includes(searchQuery) || floor.includes(searchQuery)) {
+                if (name.includes(searchQuery) || id.includes(searchQuery) || room.includes(searchQuery) || floor.includes(query)) {
                     matchesSearch = true;
                 }
 
@@ -3751,6 +3940,7 @@
             if (studentsToDisplay.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No students found.</td></tr>';
             } else {
+                const fragment = document.createDocumentFragment(); // Use Document Fragment
                 studentsToDisplay.forEach(student => {
                     const row = document.createElement('tr');
                     row.dataset.id = student.id;
@@ -3768,8 +3958,9 @@
                             </button>
                         </td>
                     `;
-                    tableBody.appendChild(row);
+                    fragment.appendChild(row);
                 });
+                tableBody.appendChild(fragment); // Append fragment once
             }
 
             paginationContainer.innerHTML = '';
@@ -3833,18 +4024,6 @@
 
                 li = document.createElement('li');
                 li.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-                li.innerHTML = `<a class="page-link" href="#" aria-label="Next" title="Go to the next page."><span aria-hidden="true">&rsaquo;</span></a>`;
-                li.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        renderStudentManagementTable();
-                    }
-                });
-                paginationContainer.appendChild(li);
-
-                li = document.createElement('li');
-                li.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
                 li.innerHTML = `<a class="page-link" href="#" aria-label="Last" title="Go to the last page."><span aria-hidden="true">&raquo;</span></a>`;
                 li.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -3899,7 +4078,7 @@
                         matchesSearch = true;
                     }
                 } else if (sectionQuery) {
-                    if (section.includes(sectionQuery)) {
+                     if (section.includes(sectionQuery)) {
                         matchesSearch = true;
                     }
                 }
@@ -3924,6 +4103,7 @@
             if (studentsToDisplay.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="8" class="text-center">No students found matching your criteria.</td></tr>';
             } else {
+                const fragment = document.createDocumentFragment(); // Use Document Fragment for faster rendering
                 const today = new Date();
                 const dayOfWeek = today.getDay();
 
@@ -3942,28 +4122,28 @@
                             <div class="star-rating" data-student-id="${student.id}" title="Click a star to assign a discipline rating for this student.">
                                 ${Array.from({ length: 10 }, (_, i) => {
                                     const starValue = 10 - i;
-                                    // Disable all but the first student's rating on Saturday if multiple students are displayed
-                                    // Also disable if student already has an entry for today
+                                    // Check if student already has an entry for today
                                     const existingEntryToday = responseHistory.some(entry =>
                                         entry.studentId === student.id &&
                                         entry.action.startsWith('Batch Discipline Review') &&
                                         entry.date === today.toLocaleDateString('en-GB')
                                     );
-                                    const isDisabled = (dayOfWeek === 6 && studentsToDisplay.length > 1 && student.id !== studentsToDisplay[0].id) || existingEntryToday;
+                                    const isDisabled = existingEntryToday; // Disable if entry exists for today
                                     return `<input type="radio" id="batch-star-${student.id}-${starValue}" name="batch-rating-${student.id}" value="${starValue}" ${isDisabled ? 'disabled' : ''} />
                                             <label for="batch-star-${student.id}-${starValue}" title="${starValue} stars">&#9733;</label>`;
                                 }).join('')}
                             </div>
                         </td>
                     `;
-                    tableBody.appendChild(row);
+                    fragment.appendChild(row);
 
                     const savedRating = student.batchDisciplineRating;
                     if (savedRating) {
-                        const radio = document.getElementById(`batch-star-${student.id}-${savedRating}`);
+                        const radio = fragment.querySelector(`#batch-star-${student.id}-${savedRating}`);
                         if (radio) radio.checked = true;
                     }
                 });
+                tableBody.appendChild(fragment); // Append fragment once
             }
 
             paginationContainer.innerHTML = '';
@@ -4055,8 +4235,7 @@
             const batchDisciplineAdminSelector = document.getElementById('batchDisciplineAdminSelector').value;
             const batchDisciplineTeacherAdminName = document.getElementById('batchDisciplineTeacherAdminName').value.trim();
             const batchDisciplineAdminEmail = currentUserEmail;
-            const updatedStudents = [];
-            const newHistoryEntries = [];
+            const updatePromises = [];
             const now = new Date();
             const date = now.toLocaleDateString('en-GB');
             const time = now.toLocaleTimeString('en-GB');
@@ -4110,52 +4289,41 @@
                     const pointsAwarded = newRating * 3;
                     const actionText = `Batch Discipline Review (${newRating} stars)`;
 
-                    const existingUpdate = updatedStudents.find(s => s.id === studentId);
-                    if (!existingUpdate) {
-                        const tempStudent = { ...student };
-                        tempStudent.points += pointsAwarded;
-                        updatedStudents.push(tempStudent);
-                        studentNames.push(student.name);
+                    const oldPoints = student.points;
+                    const newPoints = oldPoints + pointsAwarded;
 
-                        newHistoryEntries.unshift({
-                            date,
-                            time,
-                            studentId,
-                            name: student.name,
-                            action: actionText,
-                            pointsChanged: pointsAwarded,
-                            modifiedBy: modifiedBy
-                        });
-                    }
+                    studentNames.push(student.name);
+
+                    // Update student points in Firebase
+                    updatePromises.push(updateStudentInFirebase(student.id, { points: newPoints }));
+
+                    // Add history entry to Firebase
+                    updatePromises.push(addHistoryEntryToFirebase({
+                        date,
+                        time,
+                        studentId,
+                        name: student.name,
+                        action: actionText,
+                        pointsChanged: pointsAwarded,
+                        oldPoints: oldPoints,
+                        newPoints: newPoints,
+                        modifiedBy: modifiedBy
+                    }));
                 }
             }
 
-            if (updatedStudents.length === 0) {
+            if (updatePromises.length === 0) {
                 displayUpdateMessage('batchDisciplineUpdateMessage', 'No new discipline ratings selected or changed.', 'info');
                 return;
             }
 
             try {
-                updatedStudents.forEach(updatedStudent => {
-                    const index = students.findIndex(s => s.id === updatedStudent.id);
-                    if (index > -1) {
-                        students[index].points = updatedStudent.points;
-                    }
-                });
-
-                responseHistory = [...newHistoryEntries, ...responseHistory];
-
-                await Promise.all([
-                    saveStudentsToFirebase(students),
-                    saveHistoryToFirebase(responseHistory)
-                ]);
+                await Promise.all(updatePromises);
 
                 const studentNamesString = studentNames.join(', ');
                 displayUpdateMessage('batchDisciplineUpdateMessage', `Done, added batch discipline points for ${studentNamesString} by ${modifiedBy}.`, 'success');
 
-                renderBatchDisciplineTable();
-                refreshRankings();
-                refreshResponses();
+                // UI will update via real-time listeners
             } catch (error) {
                 console.error("Error saving batch discipline ratings:", error);
                 displayUpdateMessage('batchDisciplineUpdateMessage', 'Error saving batch discipline ratings. Please try again.', 'danger');
@@ -4265,35 +4433,29 @@
 
             const pointsAdjustment = targetPoints - oldPoints;
 
-            studentToUpdate.points += pointsAdjustment;
-
-            const now = new Date();
-            const date = now.toLocaleDateString('en-GB');
-            const time = now.toLocaleTimeString('en-GB');
-
-            responseHistory.unshift({
-                date,
-                time,
-                studentId: studentToUpdate.id,
-                name: studentToUpdate.name,
-                action: actionDescription,
-                pointsChanged: pointsAdjustment,
-                oldPoints: oldPoints,
-                newPoints: studentToUpdate.points,
-                modifiedBy: `${adminModifier} (${adminEmail})`
-            });
-
             try {
-                await Promise.all([
-                    saveStudentsToFirebase(students),
-                    saveHistoryToFirebase(responseHistory)
-                ]);
+                await updateStudentInFirebase(studentToUpdate.id, { points: studentToUpdate.points + pointsAdjustment });
+
+                const now = new Date();
+                const date = now.toLocaleDateString('en-GB');
+                const time = now.toLocaleTimeString('en-GB');
+
+                await addHistoryEntryToFirebase({
+                    date,
+                    time,
+                    studentId: studentToUpdate.id,
+                    name: studentToUpdate.name,
+                    action: actionDescription,
+                    pointsChanged: pointsAdjustment,
+                    oldPoints: oldPoints,
+                    newPoints: studentToUpdate.points + pointsAdjustment,
+                    modifiedBy: `${adminModifier} (${adminEmail})`
+                });
 
                 displayUpdateMessage('rankChangerMessage', `Done, rank changed for ${studentToUpdate.name} by ${adminModifier} (${adminEmail}).`, 'success');
                 setTimeout(() => {
                     rankChangerModal.hide();
-                    refreshRankings();
-                    refreshResponses();
+                    // UI will update via real-time listeners
                 }, 2000);
 
             } catch (error) {
@@ -4337,6 +4499,7 @@
             if (!individualStudentHistoryTable) return; // Added check
 
             individualStudentHistoryTable.innerHTML = '';
+            const fragment = document.createDocumentFragment(); // Use Document Fragment
 
             const studentHistory = responseHistory.filter(entry => entry.studentId === studentId)
                                                 .sort((a, b) => {
@@ -4359,8 +4522,9 @@
                         </td>
                         <td data-label="Modified By"><i class="fas fa-user-tie"></i> ${entry.modifiedBy || 'N/A'}</td>
                     `;
-                    individualStudentHistoryTable.appendChild(row);
+                    fragment.appendChild(row);
                 });
+                individualStudentHistoryTable.appendChild(fragment); // Append fragment once
             }
 
             individualStudentDetailsCard.style.display = 'block';
@@ -4460,7 +4624,7 @@
             const tabsToControl = [
                 "rankings-tab", "responses-tab", "student-management-tab",
                 "administration-tab", "batch-discipline-tab",
-                "individual-data-tab", "notes-tab" // Added notes-tab
+                "individual-data-tab", "notes-tab", "adjudicators-tab" // Added adjudicators-tab
             ];
 
             const positivePointsSectionContainer = document.getElementById('positivePointsSectionContainer');
@@ -4501,7 +4665,7 @@
     // In-charge has access to all tabs except History and Rankings
     const allowedTabs = [
         "home-tab", "administration-tab", "batch-discipline-tab",
-        "notes-tab", "student-management-tab", "individual-data-tab"
+        "student-management-tab", "individual-data-tab", "notes-tab", "adjudicators-tab"
     ];
     allowedTabs.forEach(tabId => {
         const tabElement = document.getElementById(tabId);
@@ -4515,11 +4679,12 @@
     if (negativePointsSectionContainer) negativePointsSectionContainer.classList.add('col-md-6');
     if (negativePointsSectionContainer) negativePointsSectionContainer.classList.remove('offset-md-3');
 
-    // Hide only History and Rankings for incharge
+    // Hide only Rankings and History for incharge
+    const rankingsTab = document.getElementById('rankings-tab');
+    if (rankingsTab) rankingsTab.style.display = 'none';
     const responsesTab = document.getElementById('responses-tab');
     if (responsesTab) responsesTab.style.display = 'none';
-    const rankingsTab = document.getElementById('rankings-tab');
-    if (rankingsTab) rankingsTab.style.disp
+
 
             } else if (role === "teacher") {
                 // Teacher has access to specific tabs and only negative points
@@ -4549,6 +4714,8 @@
                 if (individualDataTab) individualDataTab.style.display = 'none';
                 const responsesTab = document.getElementById('responses-tab');
                 if (responsesTab) responsesTab.style.display = 'none';
+                const adjudicatorsTab = document.getElementById('adjudicators-tab'); // Hide adjudicators tab for teacher
+                if (adjudicatorsTab) adjudicatorsTab.style.display = 'none';
             }
             // Re-check discipline tab access after role-based display is set
             checkDisciplineTabAccess();
@@ -4645,6 +4812,7 @@
             if (notesToDisplay.length === 0) {
                 notesList.innerHTML = '<div class="col-12"><div class="alert alert-info">No notes found.</div></div>';
             } else {
+                const fragment = document.createDocumentFragment(); // Use Document Fragment
                 notesToDisplay.forEach(note => {
                     const noteCard = document.createElement('div');
                     noteCard.className = 'col-md-6 mb-3';
@@ -4659,8 +4827,9 @@
                             </div>
                         </div>
                     `;
-                    notesList.appendChild(noteCard);
+                    fragment.appendChild(noteCard);
                 });
+                notesList.appendChild(fragment); // Append fragment once
             }
 
             notesPagination.innerHTML = '';
@@ -4721,12 +4890,12 @@
                 timestamp: new Date().toISOString()
             };
 
-            notes.push(newNote);
             try {
-                await saveNotesToFirebase(notes);
+                // Push to user's specific notes path
+                await database.ref(`userNotes/${currentUserUid}`).push(newNote);
                 displayUpdateMessage('addNoteMessage', 'Note added successfully!', 'success');
                 document.getElementById('addNoteForm').reset();
-                renderNotesTable();
+                // UI will update via real-time listener
             } catch (error) {
                 displayUpdateMessage('addNoteMessage', 'Error adding note. Please try again.', 'danger');
                 console.error("Error adding note:", error);
@@ -4734,34 +4903,31 @@
         }
 
         async function deleteNote(noteId) {
-            const initialLength = notes.length;
-            notes = notes.filter(note => note.id !== noteId);
-            if (notes.length < initialLength) {
-                try {
-                    await saveNotesToFirebase(notes);
-                    displayUpdateMessage('addNoteMessage', 'Note deleted successfully!', 'success');
-                    renderNotesTable();
-                } catch (error) {
-                    displayUpdateMessage('addNoteMessage', 'Error deleting note. Please try again.', 'danger');
-                    console.error("Error deleting note:", error);
-                }
+            try {
+                // Remove from user's specific notes path
+                await database.ref(`userNotes/${currentUserUid}/${noteId}`).remove();
+                displayUpdateMessage('addNoteMessage', 'Note deleted successfully!', 'success');
+                // UI will update via real-time listener
+            } catch (error) {
+                displayUpdateMessage('addNoteMessage', 'Error deleting note. Please try again.', 'danger');
+                console.error("Error deleting note:", error);
             }
         }
 
         async function updateNote(noteId, newTitle, newContent) {
-            const noteIndex = notes.findIndex(note => note.id === noteId);
-            if (noteIndex > -1) {
-                notes[noteIndex].title = newTitle;
-                notes[noteIndex].content = newContent;
-                notes[noteIndex].timestamp = new Date().toISOString(); // Update timestamp on edit
-                try {
-                    await saveNotesToFirebase(notes);
-                    displayUpdateMessage('addNoteMessage', 'Note updated successfully!', 'success');
-                    renderNotesTable(); // Re-render to update timestamp display
-                } catch (error) {
-                    displayUpdateMessage('addNoteMessage', 'Error updating note. Please try again.', 'danger');
-                    console.error("Error updating note:", error);
-                }
+            const updatedFields = {
+                title: newTitle,
+                content: newContent,
+                timestamp: new Date().toISOString()
+            };
+            try {
+                // Update specific note under user's path
+                await database.ref(`userNotes/${currentUserUid}/${noteId}`).update(updatedFields);
+                displayUpdateMessage('addNoteMessage', 'Note updated successfully!', 'success');
+                // UI will update via real-time listener
+            } catch (error) {
+                displayUpdateMessage('addNoteMessage', 'Error updating note. Please try again.', 'danger');
+                console.error("Error updating note:", error);
             }
         }
 
@@ -4776,6 +4942,7 @@
             if (publicNotes.length === 0) {
                 publicNotesList.innerHTML = '<div class="col-12"><div class="alert alert-info">No public announcements or notes available.</div></div>';
             } else {
+                const fragment = document.createDocumentFragment(); // Use Document Fragment
                 publicNotes.forEach(note => {
                     const noteCard = document.createElement('div');
                     noteCard.className = 'col-md-6 mb-3';
@@ -4792,8 +4959,9 @@
                             </div>
                         </div>
                     `;
-                    publicNotesList.appendChild(noteCard);
+                    fragment.appendChild(noteCard);
                 });
+                publicNotesList.appendChild(fragment); // Append fragment once
             }
 
             // Control visibility of add button based on role
@@ -4836,7 +5004,7 @@
                     currentUserRole = currentUserData.role;
                     currentUserUid = currentUserData.uid;
                     updateUserInfo(currentUserData);
-                    await initializeApp();
+                    await initializeApp(); // Initialize app data and listeners after user is set
                 } else {
                     // No user is signed in with Firebase, clear session storage
                     sessionStorage.removeItem('currentUser'); // Ensure session is cleared on logout
@@ -4861,7 +5029,494 @@
             }
         });
     </script>
+
+    <!-- Modal for History Graph -->
+    <div class="modal fade" id="historyGraphModal" tabindex="-1" aria-labelledby="historyGraphModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="historyGraphModalLabel">History Minus Points by Incharge</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <canvas id="historyGraphCanvas" width="800" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Incharge Activity Graph -->
+    <div class="modal fade" id="inchargeGraphModal" tabindex="-1" aria-labelledby="inchargeGraphModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="inchargeGraphModalLabel">Incharge Activity Overview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <canvas id="inchargeGraphCanvas" width="800" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Floor Statistics Graph -->
+    <div class="modal fade" id="floorGraphModal" tabindex="-1" aria-labelledby="floorGraphModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="floorGraphModalLabel">Floor Statistics Overview</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <canvas id="floorGraphCanvas" width="800" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to generate and show the history graph
+        async function generateHistoryGraph() {
+            // The inchargeGraphFilter dropdown is removed, so we will rely on the historyModifiedByFilter input
+            const searchQueryHistory = document.getElementById('historyModifiedByFilter').value.toLowerCase().trim();
+            let selectedIncharges = [];
+
+            // If a search query is present in the "Modified By" filter, prioritize it
+            if (searchQueryHistory) {
+                // Filter history entries by the search query first
+                const filteredBySearch = responseHistory.filter(entry =>
+                    entry.modifiedBy && entry.modifiedBy.toLowerCase().includes(searchQueryHistory)
+                );
+                // Extract unique incharges from this filtered set
+                const uniqueInchargesFromSearch = new Set();
+                filteredBySearch.forEach(entry => {
+                    if (entry.modifiedBy) {
+                        const match = entry.modifiedBy.match(/^(.*?)\s*\(([^)]+)\)$/);
+                        if (match && match[1]) {
+                            uniqueInchargesFromSearch.add(match[1].trim());
+                        } else {
+                            uniqueInchargesFromSearch.add(entry.modifiedBy.trim());
+                        }
+                    }
+                });
+                selectedIncharges = Array.from(uniqueInchargesFromSearch);
+            } else {
+                // If no search query is present, get all unique incharges from the entire history.
+                const allIncharges = new Set();
+                responseHistory.forEach(entry => {
+                    if (entry.modifiedBy) {
+                        const match = entry.modifiedBy.match(/^(.*?)\s*\(([^)]+)\)$/);
+                        if (match && match[1]) {
+                            allIncharges.add(match[1].trim());
+                        } else {
+                            allIncharges.add(entry.modifiedBy.trim());
+                        }
+                    }
+                });
+                selectedIncharges = Array.from(allIncharges);
+            }
+
+            if (selectedIncharges.length === 0) {
+                alert('No incharges found to generate the graph based on current filters or search.');
+                return;
+            }
+
+            // Prepare data for the graph
+            const graphData = {}; // { inchargeName: { action: totalPoints } }
+
+            selectedIncharges.forEach(incharge => {
+                graphData[incharge] = {};
+            });
+
+            responseHistory.forEach(entry => {
+                if (entry.pointsChanged < 0 && entry.modifiedBy) {
+                    let actualInchargeName = '';
+                    const match = entry.modifiedBy.match(/^(.*?)\s*\(([^)]+)\)$/);
+                    if (match && match[1]) {
+                        actualInchargeName = match[1].trim();
+                    } else {
+                        actualInchargeName = entry.modifiedBy.trim();
+                    }
+
+                    if (selectedIncharges.includes(actualInchargeName)) {
+                        if (!graphData[actualInchargeName][entry.action]) {
+                            graphData[actualInchargeName][entry.action] = 0;
+                        }
+                        graphData[actualInchargeName][entry.action] += Math.abs(entry.pointsChanged);
+                    }
+                }
+            });
+
+            // Determine all unique actions across selected incharges for consistent labels
+            const allActions = new Set();
+            Object.values(graphData).forEach(inchargeActions => {
+                Object.keys(inchargeActions).forEach(action => allActions.add(action));
+            });
+            const sortedActions = Array.from(allActions).sort();
+
+            const datasets = [];
+            const colors = [
+                'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)', 'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)', 'rgba(153, 102, 255, 0.7)', 'rgba(255, 159, 64, 0.7)',
+                'rgba(199, 199, 199, 0.7)', 'rgba(83, 102, 255, 0.7)', 'rgba(255, 83, 235, 0.7)',
+                'rgba(83, 255, 102, 0.7)'
+            ];
+            let colorIndex = 0;
+
+            for (const inchargeName of selectedIncharges) {
+                const data = sortedActions.map(action => graphData[inchargeName][action] || 0);
+                datasets.push({
+                    label: inchargeName,
+                    data: data,
+                    backgroundColor: colors[colorIndex % colors.length],
+                    borderColor: colors[colorIndex % colors.length].replace('0.7', '1'),
+                    borderWidth: 1
+                });
+                colorIndex++;
+            }
+
+            if (datasets.length === 0) {
+                alert('No negative points data found for the selected incharges.');
+                return;
+            }
+
+            // Destroy existing chart if any
+            if (window.historyChart) {
+                window.historyChart.destroy();
+            }
+
+            const ctx = document.getElementById('historyGraphCanvas').getContext('2d');
+            window.historyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: sortedActions,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Total Negative Points'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Actions'
+                            },
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += context.parsed.y + ' points';
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Show modal
+            const historyGraphModal = new bootstrap.Modal(document.getElementById('historyGraphModal'));
+            historyGraphModal.show();
+        }
+
+        // Add event listener to the new export to graph button
+        document.getElementById('exportHistoryGraph').addEventListener('click', generateHistoryGraph);
+
+        // Function to import students from Excel
+        async function importStudentsFromExcel(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                let studentsAdded = 0;
+                let studentsUpdated = 0;
+                let studentsSkipped = 0;
+                const addStudentMessage = document.getElementById('addStudentMessage');
+
+                const studentsToSave = {}; // Use an object to store students by ID for Firebase set
+                const currentStudentIds = new Set(students.map(s => s.id)); // Get current IDs for checking updates
+
+                for (const row of json) {
+                    const studentId = String(row['ID']).trim(); // Ensure ID is string
+                    const studentName = String(row['Name'] || '').trim();
+                    const studentRoom = String(row['Room'] || '').trim();
+                    const studentFloor = String(row['Floor'] || '').trim();
+                    const studentClass = String(row['Class'] || '').trim();
+                    const studentSection = String(row['Section'] || '').trim();
+                    const studentPoints = parseInt(row['Points'] || 0);
+
+                    if (!studentId || !studentName || !studentRoom || !studentFloor) {
+                        console.warn(`Skipping row due to missing required fields: ${JSON.stringify(row)}`);
+                        studentsSkipped++;
+                        continue;
+                    }
+
+                    const newStudentData = {
+                        id: studentId,
+                        name: studentName,
+                        room: studentRoom,
+                        floor: studentFloor,
+                        class: studentClass,
+                        section: studentSection,
+                        points: studentPoints,
+                        active: true // Default to active
+                    };
+
+                    if (currentStudentIds.has(studentId)) {
+                        studentsUpdated++;
+                    } else {
+                        studentsAdded++;
+                    }
+                    studentsToSave[studentId] = newStudentData; // Add/overwrite in the object
+                }
+
+                try {
+                    // Save all students from the Excel file. This will overwrite the entire 'students' node
+                    // with the data from the Excel file, ensuring consistency.
+                    await database.ref('students').set(studentsToSave);
+                    displayUpdateMessage('addStudentMessage', `Excel import complete: ${studentsAdded} students added, ${studentsUpdated} students updated, ${studentsSkipped} rows skipped.`, 'success');
+                    // UI will update via real-time listener
+                } catch (error) {
+                    displayUpdateMessage('addStudentMessage', 'Error importing students from Excel. Please try again.', 'danger');
+                    console.error("Error importing students:", error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            event.target.value = ''; // Clear the file input
+        }
+
+        // Adjudicators Tab Functions
+        function renderAdjudicatorTables() {
+            const inchargeRankingsTable = document.getElementById('inchargeRankingsTable');
+            const floorStatisticsTable = document.getElementById('floorStatisticsTable');
+
+            // 1. Incharge Activity Rankings
+            const inchargeActivity = {}; // { 'Name (email)': { positive: count, negative: count, total: count } }
+
+            responseHistory.forEach(entry => {
+                const modifiedBy = entry.modifiedBy || 'Unknown';
+                if (!inchargeActivity[modifiedBy]) {
+                    inchargeActivity[modifiedBy] = { positive: 0, negative: 0, total: 0 };
+                }
+                inchargeActivity[modifiedBy].total++;
+                if (entry.pointsChanged > 0) {
+                    inchargeActivity[modifiedBy].positive++;
+                } else if (entry.pointsChanged < 0) {
+                    inchargeActivity[modifiedBy].negative++;
+                }
+            });
+
+            const sortedIncharges = Object.entries(inchargeActivity).map(([name, data]) => ({
+                name,
+                ...data
+            })).sort((a, b) => b.total - a.total); // Sort by total entries
+
+            inchargeRankingsTable.innerHTML = '';
+            if (sortedIncharges.length === 0) {
+                inchargeRankingsTable.innerHTML = '<tr><td colspan="6" class="text-center">No incharge activity found.</td></tr>';
+            } else {
+                const fragment = document.createDocumentFragment();
+                sortedIncharges.forEach((incharge, index) => {
+                    const row = document.createElement('tr');
+                    const nameParts = incharge.name.match(/^(.*?)\s*\(([^)]+)\)$/);
+                    const displayName = nameParts ? nameParts[1].trim() : incharge.name;
+                    const email = nameParts ? nameParts[2].trim() : 'N/A';
+
+                    row.innerHTML = `
+                        <td data-label="Rank"><i class="fas fa-sort-numeric-up-alt"></i> ${index + 1}</td>
+                        <td data-label="Incharge Name"><i class="fas fa-user-tie"></i> ${displayName}</td>
+                        <td data-label="Email"><i class="fas fa-envelope"></i> ${email}</td>
+                        <td data-label="Positive Entries" class="text-success"><i class="fas fa-plus-circle"></i> ${incharge.positive}</td>
+                        <td data-label="Negative Entries" class="text-danger"><i class="fas fa-minus-circle"></i> ${incharge.negative}</td>
+}</td>
+                        <td data-label="Negative Entries" class="text-danger"><i class="fas fa-minus-circle"></i> ${incharge.negative}</td>
+                        
+<td data-label="Total Entries"><i class="fas fa-list-alt"></i> ${incharge.total}</td>
+                    `;
+                    fragment.appendChild(row);
+                });
+                inchargeRankingsTable.appendChild(fragment);
+            }
+
+            // 2. Floor Statistics
+            const floorStats = {}; 
+
+            students.forEach(student => {
+                const floor = student.floor || 'Unknown';
+                if (!floorStats[floor]) {
+                    floorStats[floor] = { totalStudents: 0, totalPoints: 0, positiveEntries: 0, negativeEntries: 0 };
+                }
+                floorStats[floor].totalStudents++;
+                floorStats[floor].totalPoints += student.points;
+            });
+
+            responseHistory.forEach(entry => {
+                const student = students.find(s => s.id === entry.studentId);
+                if (student) {
+                    const floor = student.floor || 'Unknown';
+                    if (floorStats[floor]) {
+                        if (entry.pointsChanged > 0) {
+                            floorStats[floor].positiveEntries++;
+                        } else if (entry.pointsChanged < 0) {
+                            floorStats[floor].negativeEntries++;
+                        }
+                    }
+                }
+            });
+
+            const sortedFloors = Object.keys(floorStats).sort((a, b) => a - b);
+
+            floorStatisticsTable.innerHTML = '';
+            if (sortedFloors.length === 0) {
+                floorStatisticsTable.innerHTML = '<tr><td colspan="5" class="text-center">No floor data available.</td></tr>';
+            } else {
+                const fragment = document.createDocumentFragment();
+                sortedFloors.forEach(floor => {
+                    const stats = floorStats[floor];
+                    const avgPoints = stats.totalStudents > 0 ? (stats.totalPoints / stats.totalStudents).toFixed(2) : 0;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td data-label="Floor"><i class="fas fa-building"></i> ${floor}</td>
+                        <td data-label="Total Students"><i class="fas fa-users"></i> ${stats.totalStudents}</td>
+                        <td data-label="Average Points"><i class="fas fa-coins"></i> ${avgPoints}</td>
+                        <td data-label="Total Positive Entries" class="text-success"><i class="fas fa-plus-circle"></i> ${stats.positiveEntries}</td>
+                        <td data-label="Total Negative Entries" class="text-danger"><i class="fas fa-minus-circle"></i> ${stats.negativeEntries}</td>
+                    `;
+                    fragment.appendChild(row);
+                });
+                floorStatisticsTable.appendChild(fragment);
+            }
+        }
+
+        function generateInchargeGraph() {
+            const inchargeActivity = {};
+            responseHistory.forEach(entry => {
+                const modifiedBy = entry.modifiedBy || 'Unknown';
+                if (!inchargeActivity[modifiedBy]) {
+                    inchargeActivity[modifiedBy] = { positive: 0, negative: 0, total: 0 };
+                }
+                inchargeActivity[modifiedBy].total++;
+                if (entry.pointsChanged > 0) {
+                    inchargeActivity[modifiedBy].positive++;
+                } else if (entry.pointsChanged < 0) {
+                    inchargeActivity[modifiedBy].negative++;
+                }
+            });
+            
+            const sortedIncharges = Object.entries(inchargeActivity)
+                .map(([name, data]) => ({ name: name.split(' (')[0], ...data }))
+                .sort((a, b) => b.total - a.total)
+                .slice(0, 15); // Show top 15 for clarity
+
+            const labels = sortedIncharges.map(i => i.name);
+            const positiveData = sortedIncharges.map(i => i.positive);
+            const negativeData = sortedIncharges.map(i => i.negative);
+
+            if (window.inchargeChart) {
+                window.inchargeChart.destroy();
+            }
+
+            const ctx = document.getElementById('inchargeGraphCanvas').getContext('2d');
+            window.inchargeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Positive Entries',
+                        data: positiveData,
+                        backgroundColor: 'rgba(92, 184, 92, 0.7)',
+                    }, {
+                        label: 'Negative Entries',
+                        data: negativeData,
+                        backgroundColor: 'rgba(217, 83, 79, 0.7)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Number of Entries' } },
+                        x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } }
+                    }
+                }
+            });
+            new bootstrap.Modal(document.getElementById('inchargeGraphModal')).show();
+        }
+
+        function generateFloorGraph() {
+            const floorStats = {};
+            students.forEach(student => {
+                const floor = student.floor || 'Unknown';
+                if (!floorStats[floor]) {
+                    floorStats[floor] = { totalStudents: 0, totalPoints: 0 };
+                }
+                floorStats[floor].totalStudents++;
+                floorStats[floor].totalPoints += student.points;
+            });
+
+            const sortedFloors = Object.keys(floorStats).sort((a, b) => a - b);
+            const labels = sortedFloors.map(f => `Floor ${f}`);
+            const avgPointsData = sortedFloors.map(f => (
+                floorStats[f].totalStudents > 0 ? (floorStats[f].totalPoints / floorStats[f].totalStudents).toFixed(2) : 0
+            ));
+
+            if (window.floorChart) {
+                window.floorChart.destroy();
+            }
+
+            const ctx = document.getElementById('floorGraphCanvas').getContext('2d');
+            window.floorChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Points',
+                        data: avgPointsData,
+                        backgroundColor: 'rgba(74, 144, 226, 0.7)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { title: { display: true, text: 'Average Points' } }
+                    }
+                }
+            });
+            new bootstrap.Modal(document.getElementById('floorGraphModal')).show();
+        }
+    </script>
 </body>
 </html>
-
-
