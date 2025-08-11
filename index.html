@@ -3644,7 +3644,7 @@ const firebaseConfig = {
             if (searchQueryHistory) {
                 filteredHistory = filteredHistory.filter(entry => {
                     const name = entry.name ? entry.name.toLowerCase() : '';
-                    const id = entry.studentId ? entry.studentId.toLowerCase() : '';
+                    const id = entry.id ? entry.id.toLowerCase() : ''; // Corrected from entry.studentId to entry.id
                     const student = students.find(s => s.id === entry.studentId);
                     const studentClass = student ? student.class.toLowerCase() : '';
                     const section = student ? student.section.toLowerCase() : '';
@@ -3907,19 +3907,24 @@ const firebaseConfig = {
                 const section = student.section ? student.section.toLowerCase() : '';
 
                 let matchesSearch = false;
-                if (name.includes(searchQuery) || id.includes(searchQuery) || room.includes(searchQuery) || floor.includes(query)) {
+                // Check if query matches name, ID, room, or floor
+                if (name.includes(searchQuery) || id.includes(searchQuery) || room.includes(searchQuery) || floor.includes(searchQuery)) {
                     matchesSearch = true;
                 }
 
+                // Check for class and section matches
                 if (classQuery && sectionQuery) {
+                    // If query is "X-A", match both class and section
                     if (studentClass === classQuery && section === sectionQuery) {
                         matchesSearch = true;
                     }
                 } else if (classQuery) {
+                    // If query is "X", match class
                     if (studentClass.includes(classQuery)) {
                         matchesSearch = true;
                     }
                 } else if (sectionQuery) {
+                    // If query is "A", match section
                     if (section.includes(sectionQuery)) {
                         matchesSearch = true;
                     }
