@@ -2492,16 +2492,19 @@
 
         // --- DASHBOARD LOGIC (from dashboard.html) ---
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAtanJUJCZmcvGf_JS0ffKc1SlhMW8aWug",
-  authDomain: "gstatus-304a8.firebaseapp.com",
-  databaseURL: "https://gstatus-304a8-default-rtdb.firebaseio.com",
-  projectId: "gstatus-304a8",
-  storageBucket: "gstatus-304a8.firebasestorage.app",
-  messagingSenderId: "382807331706",
-  appId: "1:382807331706:web:c9e2a5236753e97580bcc3",
-  measurementId: "G-97JXW80ZLY"
-};
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        
+         const firebaseConfig = {
+         apiKey: "AIzaSyAtanJUJCZmcvGf_JS0ffKc1SlhMW8aWug",
+         authDomain: "gstatus-304a8.firebaseapp.com",
+         databaseURL: "https://gstatus-304a8-default-rtdb.firebaseio.com",
+          projectId: "gstatus-304a8",
+         storageBucket: "gstatus-304a8.firebasestorage.app",
+         messagingSenderId: "382807331706",
+          appId: "1:382807331706:web:c9e2a5236753e97580bcc3",
+         measurementId: "G-97JXW80ZLY"
+        };
+
         let firebaseApp;
         try {
             firebaseApp = firebase.initializeApp(firebaseConfig);
@@ -3177,7 +3180,7 @@ const firebaseConfig = {
                     publicNoteModal.hide();
                     // renderPublicNotes() will be called by real-time listener
                 } catch (error) {
-                    displayUpdateMessage('publicNoteMessage', `Error ${noteId ? 'updating' : 'adding'} public note. Please try again.`, 'danger');
+                    displayUpdateMessage('publicNoteMessage', `Error ${noteId ? 'updating' : 'adding'} public note. Please tryC again.`, 'danger');
                     console.error("Error saving public note:", error);
                 }
             });
@@ -3644,7 +3647,7 @@ const firebaseConfig = {
             if (searchQueryHistory) {
                 filteredHistory = filteredHistory.filter(entry => {
                     const name = entry.name ? entry.name.toLowerCase() : '';
-                    const id = entry.id ? entry.id.toLowerCase() : ''; // Corrected from entry.studentId to entry.id
+                    const id = entry.studentId ? entry.studentId.toLowerCase() : '';
                     const student = students.find(s => s.id === entry.studentId);
                     const studentClass = student ? student.class.toLowerCase() : '';
                     const section = student ? student.section.toLowerCase() : '';
@@ -3912,22 +3915,19 @@ const firebaseConfig = {
                     matchesSearch = true;
                 }
 
-                // Check for class and section matches
+                // Check for class-section combination (e.g., "X-A")
                 if (classQuery && sectionQuery) {
-                    // If query is "X-A", match both class and section
                     if (studentClass === classQuery && section === sectionQuery) {
                         matchesSearch = true;
                     }
-                } else if (classQuery) {
-                    // If query is "X", match class
-                    if (studentClass.includes(classQuery)) {
-                        matchesSearch = true;
-                    }
-                } else if (sectionQuery) {
-                    // If query is "A", match section
-                    if (section.includes(sectionQuery)) {
-                        matchesSearch = true;
-                    }
+                } 
+                // Check for class only (e.g., "X")
+                else if (classQuery && studentClass.includes(classQuery)) {
+                    matchesSearch = true;
+                } 
+                // Check for section only (e.g., "A")
+                else if (sectionQuery && section.includes(sectionQuery)) {
+                    matchesSearch = true;
                 }
                 return matchesSearch;
             });
@@ -5359,16 +5359,13 @@ const firebaseConfig = {
                     const displayName = nameParts ? nameParts[1].trim() : incharge.name;
                     const email = nameParts ? nameParts[2].trim() : 'N/A';
 
-                    row.innerHTML = `
+                   row.innerHTML = `
                         <td data-label="Rank"><i class="fas fa-sort-numeric-up-alt"></i> ${index + 1}</td>
                         <td data-label="Incharge Name"><i class="fas fa-user-tie"></i> ${displayName}</td>
                         <td data-label="Email"><i class="fas fa-envelope"></i> ${email}</td>
                         <td data-label="Positive Entries" class="text-success"><i class="fas fa-plus-circle"></i> ${incharge.positive}</td>
                         <td data-label="Negative Entries" class="text-danger"><i class="fas fa-minus-circle"></i> ${incharge.negative}</td>
-}</td>
-                        <td data-label="Negative Entries" class="text-danger"><i class="fas fa-minus-circle"></i> ${incharge.negative}</td>
-                        
-<td data-label="Total Entries"><i class="fas fa-list-alt"></i> ${incharge.total}</td>
+                        <td data-label="Total Entries"><i class="fas fa-list-alt"></i> ${incharge.total}</td>
                     `;
                     fragment.appendChild(row);
                 });
@@ -5525,3 +5522,8 @@ const firebaseConfig = {
     </script>
 </body>
 </html>
+
+
+S
+
+                                    
