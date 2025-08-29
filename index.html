@@ -3421,29 +3421,52 @@ function refreshRankings() {
         floor: floorFilter
     });
 
+    // ...inside refreshRankings()...
     // Only show students for the selected floor
-    let studentsToProcess = students.filter(s => s.floor === floorFilter);
+    let studentsOnFloor = students.filter(s => String(s.floor) === String(floorFilter));
 
-    // Separate positive and negative points
-    let positiveStudents = studentsToProcess.filter(s => s.points >= 0);
-    let negativeStudents = studentsToProcess.filter(s => s.points < 0);
+    // Assign grades based on points or manual override
+    studentsOnFloor.forEach(student => {
+        if (student.manualGrade) {
+            student.assignedGrade = student.manualGrade;
+        } else {
+            // Calculate grade based on points
+            const floorPositiveStudents = studentsOnFloor.filter(s => s.points >= 0);
+            floorPositiveStudents.sort((a, b) => b.points - a.points);
+            const studentIndex = floorPositiveStudents.findIndex(s => s.id === student.id);
 
-    // Assign E grade to negative points
-    negativeStudents.forEach(student => {
-        student.assignedGrade = 'E';
+            if (student.points < 0) {
+                student.assignedGrade = 'E';
+            } else if (String(floorFilter) === '5') {
+                // Custom grading for Floor 5
+                if (studentIndex >= 0 && studentIndex < 5) {
+                    student.assignedGrade = 'A+';
+                } else if (studentIndex >= 5 && studentIndex < 20) {
+                    student.assignedGrade = 'A';
+                } else if (studentIndex >= 20 && studentIndex < 40) {
+                    student.assignedGrade = 'B';
+                } else if (studentIndex >= 40 && studentIndex < 60) {
+                    student.assignedGrade = 'C';
+                } else {
+                    student.assignedGrade = 'D';
+                }
+            } else {
+                // Default grading for other floors
+                if (studentIndex < 10) {
+                    student.assignedGrade = 'A+';
+                } else if (studentIndex < 40) {
+                    student.assignedGrade = 'A';
+                } else if (studentIndex < 80) {
+                    student.assignedGrade = 'B';
+                } else if (studentIndex < 130) {
+                    student.assignedGrade = 'C';
+                } else {
+                    student.assignedGrade = 'D';
+                }
+            }
+        }
     });
-
-    // Sort positive students by points descending
-    positiveStudents.sort((a, b) => b.points - a.points);
-
-    // Assign grades based on rank
-    positiveStudents.forEach((student, idx) => {
-        if (idx < 10) student.assignedGrade = 'A+';
-        else if (idx < 40) student.assignedGrade = 'A';
-        else if (idx < 80) student.assignedGrade = 'B';
-        else if (idx < 130) student.assignedGrade = 'C';
-        else student.assignedGrade = 'D';
-    });
+// ...existing code...
 
     // Filter by search and grade if needed
     let studentsToDisplayMain = positiveStudents;
