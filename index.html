@@ -1680,7 +1680,14 @@
                 </div>
 
                 <!-- Rankings Tab -->
-                <div class="tab-pane fade" id="rankings" role="tabpanel">
+                <div class="tab-pane fade" id="rankings">
+
+<div class="text-end mb-3">
+    <button class="btn btn-success" onclick="exportAllRankings()" title="Download all floors and E-Rank students as Excel file">
+        <i class="fas fa-file-excel"></i> Download Full Rankings Report
+    </button>
+</div>
+ role="tabpanel">
                     <h3><i class="fas fa-trophy"></i> Student Rankings</h3>
                     <div class="filter-section">
                         <div class="row">
@@ -5586,6 +5593,22 @@ filteredStudents.sort((a, b) => String(a.name || '').localeCompare(String(b.name
             new bootstrap.Modal(document.getElementById('floorGraphModal')).show();
         }
     </script>
+
+<script>
+function exportAllRankings() {
+    const wb = XLSX.utils.book_new();
+    const rankingsTables = document.querySelectorAll("#rankings table");
+
+    rankingsTables.forEach((table, index) => {
+        const ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, "Floor_" + (index + 1));
+    });
+
+    // Save file with today's date
+    const date = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Gurukul_Full_Rankings_Report_${date}.xlsx`);
+}
+</script>
 </body>
 </html>
 
