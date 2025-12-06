@@ -3336,6 +3336,42 @@ const firebaseConfig = {
             document.getElementById('adjudicators-tab').addEventListener('shown.bs.tab', renderAdjudicatorTables);
             document.getElementById('exportInchargeGraph').addEventListener('click', generateInchargeGraph);
             document.getElementById('exportFloorGraph').addEventListener('click', generateFloorGraph);
+            guardTabAccess();
+        }
+
+        function guardTabAccess() {
+            const indivLink = document.getElementById('individual-data-tab');
+            if (indivLink) {
+                indivLink.addEventListener('click', function(e) {
+                    if (currentUserRole !== 'admin') {
+                        e.preventDefault();
+                        alert('Unauthorized: Only admins can access Individual Data');
+                    }
+                });
+            }
+            const adjLink = document.getElementById('adjudicators-tab');
+            if (adjLink) {
+                adjLink.addEventListener('click', function(e) {
+                    if (currentUserRole !== 'admin') {
+                        e.preventDefault();
+                        alert('Unauthorized: Only admins can access Adjudicators');
+                    }
+                });
+            }
+        }
+
+        function runAccessSelfTest() {
+            const indiv = document.getElementById('individual-data-tab');
+            const adj = document.getElementById('adjudicators-tab');
+            const shouldHide = currentUserRole !== 'admin';
+            const indivHidden = indiv ? (indiv.style.display === 'none') : true;
+            const adjHidden = adj ? (adj.style.display === 'none') : true;
+            const result = {
+                role: currentUserRole,
+                individualDataTabHidden: shouldHide ? indivHidden : !indivHidden,
+                adjudicatorsTabHidden: shouldHide ? adjHidden : !adjHidden
+            };
+            console.log('Access Self-Test', result);
         }
 
         function parseClassSectionQuery(query) {
@@ -3409,6 +3445,12 @@ const firebaseConfig = {
             const query = document.getElementById(inputId).value.toLowerCase().trim();
             const results = document.getElementById(resultsId);
             if (!results) return;
+
+            if (inputId === 'searchQueryIndividualData' && currentUserRole !== 'admin') {
+                document.getElementById(inputId).value = '';
+                alert('Unauthorized: Only admins can view individual student data');
+                return;
+            }
 
             results.innerHTML = ''; // Clear previous results
 
@@ -3640,7 +3682,7 @@ studentsOnFloor.forEach(student => {
     // Render E rank table
     eRankingsTable.innerHTML = '';
     if (eRankStudents.length === 0) {
-        eRankingsTable.innerHTML = '<tr><td colspan="11" class="text-center">No students with negative points.</td></tr>';
+        eRankingsTable.innerHTML = '<tr><td colspan="9" class="text-center">No students with negative points.</td></tr>';
     } else {
         const rows = eRankStudents.map((student, idx) => {
             const rank = idx + 1;
@@ -3652,12 +3694,6 @@ studentsOnFloor.forEach(student => {
     <td>${student.room || ''}</td>
     <td>${student.floor || ''}</td>
     <td>${student.points ?? 0}</td>
-    <td><span class="badge ${getGradeBadgeClass(student.assignedGrade)}">${student.assignedGrade}</span></td>
-    <td>
-        <input type="text" class="form-control remark-input" value="${student.remark || ''}" 
-            onchange="updateRemark('${student.id}', this.value)" 
-            placeholder="Add remark" title="Edit remark for ${student.name}" />
-    </td>
     <td>${student.class || ''}</td>
     <td>${student.section || ''}</td>
     <td>
@@ -4557,6 +4593,7 @@ filteredStudents.sort((a, b) => String(a.name || '').localeCompare(String(b.name
         }
 
         function displayIndividualStudentData(studentId) {
+            if (currentUserRole !== 'admin') { alert('Unauthorized: Only admins can access Individual Data'); return; }
             const student = students.find(s => s.id === studentId);
             const individualStudentDetailsCard = document.getElementById('individualStudentDetailsCard');
             if (!student || !individualStudentDetailsCard) { // Added check for card existence
@@ -4740,28 +4777,30 @@ filteredStudents.sort((a, b) => String(a.name || '').localeCompare(String(b.name
 
 
             } else if (role === "incharge") {
-    // In-charge has access to all tabs except History and Rankings
-    const allowedTabs = [
-        "home-tab", "administration-tab", "batch-discipline-tab",
-        "student-management-tab", "individual-data-tab", "notes-tab", "adjudicators-tab"
-    ];
-    allowedTabs.forEach(tabId => {
-        const tabElement = document.getElementById(tabId);
-        if (tabElement) {
-            tabElement.style.display = "";
-        }
-    });
-    if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'block';
-    if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'block';
-    if (positivePointsSectionContainer) positivePointsSectionContainer.classList.add('col-md-6');
-    if (negativePointsSectionContainer) negativePointsSectionContainer.classList.add('col-md-6');
-    if (negativePointsSectionContainer) negativePointsSectionContainer.classList.remove('offset-md-3');
+                const allowedTabs = [
+                    "home-tab", "administration-tab", "batch-discipline-tab",
+                    "student-management-tab", "notes-tab"
+                ];
+                allowedTabs.forEach(tabId => {
+                    const tabElement = document.getElementById(tabId);
+                    if (tabElement) {
+                        tabElement.style.display = "";
+                    }
+                });
+                if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'block';
+                if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'block';
+                if (positivePointsSectionContainer) positivePointsSectionContainer.classList.add('col-md-6');
+                if (negativePointsSectionContainer) negativePointsSectionContainer.classList.add('col-md-6');
+                if (negativePointsSectionContainer) negativePointsSectionContainer.classList.remove('offset-md-3');
 
-    // Hide only Rankings and History for incharge
-    const rankingsTab = document.getElementById('rankings-tab');
-    if (rankingsTab) rankingsTab.style.display = 'none';
-    const responsesTab = document.getElementById('responses-tab');
-    if (responsesTab) responsesTab.style.display = 'none';
+                const rankingsTab = document.getElementById('rankings-tab');
+                if (rankingsTab) rankingsTab.style.display = 'none';
+                const responsesTab = document.getElementById('responses-tab');
+                if (responsesTab) responsesTab.style.display = 'none';
+                const individualDataTab = document.getElementById('individual-data-tab');
+                if (individualDataTab) individualDataTab.style.display = 'none';
+                const adjudicatorsTab = document.getElementById('adjudicators-tab');
+                if (adjudicatorsTab) adjudicatorsTab.style.display = 'none';
 
 
             } else if (role === "teacher") {
@@ -4798,6 +4837,7 @@ filteredStudents.sort((a, b) => String(a.name || '').localeCompare(String(b.name
             // Re-check discipline tab access after role-based display is set
             checkDisciplineTabAccess();
             renderPublicNotes(); // Re-render public notes to update button visibility
+            runAccessSelfTest();
         }
 
         // New function for Batch Discipline Timer
@@ -5611,6 +5651,3 @@ function exportAllRankings() {
 </script>
 </body>
 </html>
-
-
-
