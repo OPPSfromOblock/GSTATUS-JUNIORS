@@ -60,11 +60,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <!-- <link rel="manifest" href="manifest.json"> -->
-    <meta name="theme-color" content="#4a90e2">
-    <link rel="apple-touch-icon" href="logo.png">
-
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta name="theme-color" content="#4a90e2">
+    <link rel="apple-touch-icon" href="logo.png">
+    
     <!-- Fix Cross-Origin-Opener-Policy errors -->
     <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups">
     <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
@@ -145,10 +145,16 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-            background-size: 400% 400%;
-            animation: gradientAnimation 25s ease infinite; /* Slower animation */
-            z-index: -1; /* Send to back */
-            opacity: 0.6; /* More subtle transparency */
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        /* Disable animation on low-range/mobile devices for performance */
+        @media (min-width: 768px) {
+            .animated-background {
+                background-size: 400% 400%;
+                animation: gradientAnimation 25s ease infinite;
+            }
         }
 
         @keyframes gradientAnimation {
@@ -158,40 +164,39 @@
         }
 
         .sidebar {
-            width: 280px; /* Increased width for better content display */
+            width: 280px;
             background: linear-gradient(180deg, #60a5fa 0%, #1e40af 100%);
             color: white;
             padding: 20px;
-            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1); /* Reduced shadow */
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* Push logout to bottom */
-            position: fixed; /* Fixed sidebar */
-            height: 100vh; /* Full height */
+            justify-content: space-between;
+            position: fixed;
+            height: 100vh;
             z-index: 1000;
-            transition: transform 0.3s ease-in-out; /* For mobile sidebar toggle */
-            transform: translateX(-280px); /* Hidden by default on mobile */
-            overflow-y: auto; /* Add vertical scrollbar */
-            overflow-x: hidden; /* Hide horizontal scrollbar */
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-280px);
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .sidebar-header {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
             margin-bottom: 25px;
-            padding: 10px;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
+            padding: 0; /* Removed padding to let logo fit entirely */
+            background: transparent; /* Simplified background */
             border-radius: 10px;
-            border-left: 4px solid #3b82f6;
+            overflow: hidden; /* Ensure logo doesn't bleed out of radius */
         }
 
         .sidebar-logo-box {
-            width: 100px;
-            height: 100px;
+            width: 100%; /* Full width of sidebar-header */
+            height: auto;
+            min-height: 100px;
             background: transparent;
-            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -201,7 +206,8 @@
         .sidebar-logo-box img {
             width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover; /* Fill the complete window/box */
+            display: block;
         }
 
         .sidebar-branding {
@@ -785,9 +791,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #60a5fa 0%, #1e40af 50%, #ffffff 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 8s ease infinite;
+            background: var(--secondary-color);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -795,6 +799,14 @@
             z-index: 9999;
             opacity: 1;
             transition: opacity 0.5s ease;
+        }
+
+        @media (min-width: 768px) {
+            .loading-overlay {
+                background: linear-gradient(135deg, #60a5fa 0%, #1e40af 50%, #ffffff 100%);
+                background-size: 400% 400%;
+                animation: gradientShift 8s ease infinite;
+            }
         }
 
         .loading-overlay.hidden {
@@ -812,28 +824,35 @@
         }
 
         .loading-logo {
-            max-width: 280px;
-            max-height: 280px;
+            max-width: 200px; /* Reduced for better mobile loading */
+            max-height: 200px;
             width: auto;
             height: auto;
             margin-bottom: 30px;
-            animation: pulse 2s ease-in-out infinite;
             object-fit: contain;
+        }
+
+        @media (min-width: 768px) {
+            .loading-logo {
+                max-width: 280px;
+                max-height: 280px;
+                animation: pulse 2s ease-in-out infinite;
+            }
         }
 
         .loading-text {
             font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 20px;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .spinner {
-            border: 6px solid rgba(255,255,255,0.3);
-            border-top: 6px solid white;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
             border-radius: 50%;
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
         }
 
@@ -860,15 +879,20 @@
             left: 0;
             right: 0;
             background: rgba(255, 107, 53, 0.95);
-            padding: 15px 20px;
+            padding: 10px 15px; /* Reduced padding */
             z-index: 9998;
             display: none;
-            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
         }
 
         .progress-bar-container.active {
             display: block;
-            animation: slideDown 0.3s ease;
+        }
+
+        @media (min-width: 768px) {
+            .progress-bar-container {
+                box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+                animation: slideDown 0.3s ease;
+            }
         }
 
         @keyframes slideDown {
@@ -883,8 +907,8 @@
         }
 
         .progress-message {
-            font-size: 0.95rem;
-            margin-bottom: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
             font-weight: 500;
         }
 
@@ -898,10 +922,16 @@
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #00b4d8 0%, #9d4edd 100%);
+            background: #00b4d8;
             width: 0%;
             transition: width 0.2s ease;
-            box-shadow: 0 0 10px rgba(157, 78, 221, 0.5);
+        }
+
+        @media (min-width: 768px) {
+            .progress-fill {
+                background: linear-gradient(90deg, #00b4d8 0%, #9d4edd 100%);
+                box-shadow: 0 0 10px rgba(157, 78, 221, 0.5);
+            }
         }
 
         /* Styles for editable table cells */
@@ -1526,6 +1556,7 @@
                 overflow-x: hidden;
             }
         }
+
     </style>
 </head>
 <body>
@@ -1704,12 +1735,12 @@
                         <div class="mb-3">
                             <label class="form-label"><i class="fas fa-user-tag"></i> Your Position</label>
                             <div id="roleSelection">
-                                <div class="role-option selected" data-role="teacher">
+                                <div class="role-option selected" data-role="parent">
                                     <label>
-                                        <input type="radio" name="role" value="teacher" checked aria-label="Select Teacher Role"/>
+                                        <input type="radio" name="role" value="parent" checked aria-label="Select Parent Role"/>
                                         <div>
-                                            <span class="d-block title">Teacher</span>
-                                            <span class="d-block description">Can manage classes and submit grades</span>
+                                            <span class="d-block title">Parent</span>
+                                            <span class="d-block description">View student progress and rankings</span>
                                         </div>
                                     </label>
                                 </div>
@@ -1739,7 +1770,35 @@
                     <div class="greeting">
                         <i class="fas fa-hands-praying"></i> Jay Swaminarayan <i class="fas fa-hands-praying"></i>
                     </div>
-                    <div class="row">
+                    <!-- Parent Portal Tab (Initially Hidden) -->
+                    <div id="parent-portal-content" style="display: none;">
+                        <div class="card shadow-sm border-primary mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0"><i class="fas fa-user-graduate"></i> Student Progress Portal</h4>
+                            </div>
+                            <div class="card-body text-center p-5">
+                                <h5 class="card-title mb-3">View Your Child's Progress</h5>
+                                <p class="card-text text-muted mb-4">Enter the Student MID provided by the school to view points and rank.</p>
+                                <div class="row justify-content-center">
+                                    <div class="col-md-6">
+                                        <div class="input-group mb-3 input-group-lg">
+                                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                            <input type="text" class="form-control" id="parentStudentMid" placeholder="Enter Student MID (e.g. AC1234)">
+                                            <button class="btn btn-primary" type="button" id="btnCheckStudentStats">
+                                                <i class="fas fa-search"></i> Check Progress
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="parentStudentResult" class="mt-4" style="display:none;">
+                            <!-- Result Card Will Be Injected Here -->
+                        </div>
+                    </div>
+
+                    <div class="row" id="home-dashboard-content">
                         <div class="col-md-6">
                             <div class="system-status">
                                 <i class="fas fa-check-circle"></i>
@@ -1776,7 +1835,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="card mt-4">
+                    <div class="card mt-4" id="homeAnnouncements">
                         <div class="card-header">
                             <i class="fas fa-bullhorn"></i> Announcements
                         </div>
@@ -1793,7 +1852,7 @@
                     </div>
 
                     <!-- Support Section (moved from Support Tab) -->
-                    <div class="card mt-4">
+                    <div class="card mt-4" id="homeSupportSection">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div><i class="fas fa-life-ring"></i> Support</div>
                             <button class="btn btn-outline-secondary btn-sm" id="refreshIssuesBtn">
@@ -1829,14 +1888,36 @@
                                 
                                 <!-- Right Panel: Issues List -->
                                 <div class="col-md-8 d-flex flex-column bg-light p-0">
-                                    <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center shadow-sm" style="z-index: 1;">
-                                        <h5 class="m-0"><i class="fas fa-list text-secondary"></i> Issue Tracker</h5>
-                                        <!-- refresh button kept in header for parity -->
+                                    <div class="p-2 bg-white border-bottom shadow-sm" style="z-index: 1;">
+                                        <ul class="nav nav-pills nav-fill" id="supportIssueTabs" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active py-2" id="internal-issues-tab" data-bs-toggle="pill" data-bs-target="#internal-issues-pane" type="button" role="tab">
+                                                    <i class="fas fa-user-shield me-1"></i> Internal
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation" id="parent-issues-tab-item" style="display: none;">
+                                                <button class="nav-link py-2" id="parent-issues-tab" data-bs-toggle="pill" data-bs-target="#parent-issues-pane" type="button" role="tab">
+                                                    <i class="fas fa-user-graduate me-1"></i> Parent
+                                                </button>
+                                            </li>
+                                        </ul>
                                     </div>
-                                    <div class="flex-grow-1 overflow-auto p-3" id="issuesList">
-                                        <div class="text-center p-5 text-muted">
-                                            <div class="spinner-border text-primary mb-2" role="status"></div>
-                                            <div>Loading issues...</div>
+                                    <div class="tab-content flex-grow-1 overflow-auto p-3" id="supportIssueTabContent">
+                                        <div class="tab-pane fade show active" id="internal-issues-pane" role="tabpanel">
+                                            <div id="issuesList">
+                                                <div class="text-center p-5 text-muted">
+                                                    <div class="spinner-border text-primary mb-2" role="status"></div>
+                                                    <div>Loading issues...</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="tab-pane fade" id="parent-issues-pane" role="tabpanel">
+                                            <div id="parentIssuesList">
+                                                <div class="text-center p-5 text-muted">
+                                                    <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                                    <div>No parent issues reported.</div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1845,7 +1926,7 @@
                     </div>
 
                     <!-- New section for Batch Discipline Timer -->
-                    <div class="card mt-4">
+                    <div class="card mt-4" id="homeBatchTimer">
                         <div class="card-header">
                             <i class="fas fa-clock"></i> Batch Discipline Window
                         </div>
@@ -1855,7 +1936,7 @@
                     </div>
 
                     <!-- Public Announcements / Notes Section -->
-                    <div class="card mt-4">
+                    <div class="card mt-4" id="homePublicNotes">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div><i class="fas fa-globe"></i> Public Announcements / Notes</div>
                             <button class="btn btn-sm btn-success" id="addPublicNoteBtn" style="display: none;" title="Add a new public announcement or note.">
@@ -2006,6 +2087,7 @@
                                         <option value="HARI KRISHNA TIWARI">HARI KRISHNA TIWARI</option>
                                         <option value="SHIVA KRISHNA">SHIVA KRISHNA</option>
                                         <option value="RONAK SIR">RONAK SIR</option>
+                                        <option value="RAHUL SIR">RAHUL SIR</option>
                                         <option value="Manoj">Manoj</option>
                                         <option value="Testing Admin">Testing admin</option>
                                     </select>
@@ -2025,6 +2107,93 @@
                                 </div>
                             </form>
                             <div class="update-message alert alert-success mt-3" id="updateMessage" role="alert"></div>
+                        </div>
+                    </div>
+
+                    <!-- Roles Manager Section (Admin Only) -->
+                    <div class="card mb-4" id="rolesManagerCard" style="display: none;">
+                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                            <div><i class="fas fa-users-cog"></i> Roles Manager</div>
+                            <button class="btn btn-sm btn-outline-light" id="lockRolesManagerBtn" title="Lock Roles Manager">
+                                <i class="fas fa-lock"></i> Lock
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Password Prompt -->
+                            <div id="rolesManagerAuth">
+                                <p class="text-muted text-center mb-3">Please enter the password to access Roles Manager.</p>
+                                <div class="row justify-content-center">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" id="rolesManagerPassword" placeholder="Enter Password">
+                                            <button class="btn btn-primary" type="button" id="unlockRolesManagerBtn">Unlock</button>
+                                        </div>
+                                        <div id="rolesManagerAuthError" class="text-danger mt-2 text-center" style="display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Roles Manager Content -->
+                            <div id="rolesManagerContent" style="display: none;">
+                                <ul class="nav nav-tabs mb-3" id="rolesTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="tab-teachers" data-bs-toggle="tab" data-bs-target="#content-teachers" type="button" role="tab">Teachers</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="tab-admins" data-bs-toggle="tab" data-bs-target="#content-admins" type="button" role="tab">Admins</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="tab-incharges" data-bs-toggle="tab" data-bs-target="#content-incharges" type="button" role="tab">Incharges</button>
+                                    </li>
+                                </ul>
+                                <div class="tab-content" id="rolesTabsContent">
+                                    <div class="tab-pane fade show active" id="content-teachers" role="tabpanel">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Email</th>
+                                                        <th>Role</th>
+                                                        <th>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="list-teachers"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="content-admins" role="tabpanel">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Email</th>
+                                                        <th>Role</th>
+                                                        <th>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="list-admins"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="content-incharges" role="tabpanel">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Name</th>
+                                                        <th>Email</th>
+                                                        <th>Role</th>
+                                                        <th>Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="list-incharges"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -2164,6 +2333,7 @@
                                     <option value="RAJIV">RAJIV</option>
                                     <option value="HARI KRISHNA TIWARI">HARI KRISHNA TIWARI</option>
                                     <option value="SHIVA KRISHNA">SHIVA KRISHNA</option>
+                                    <option value="RAHUL SIR">RAHUL SIR</option>
                                     <option value="Manoj">Manoj</option>
                                     <option value="Testing Admin">Testing admin</option>
                                 </select>
@@ -2721,10 +2891,10 @@
                         </div>
                         <div class="card-body">
                             <ul class="list-group list-group-flush">
-                                <li class="list-group-item"><strong>1:</strong> Only 5 biscuit packets- limil (no choco pie/Dark Fantas )</li>
-                                <li class="list-group-item"><strong>2:</strong> Tacket / Sweater are not allowed and no Caps even</li>
-                                <li class="list-group-item"><strong>3:</strong> No one should come in civi dress</li>
-                                <li class="list-group-item"><strong>4:</strong> Only Gurukul T-shirt , No other gurukul Tersey or any other gurukul dress code</li>
+                                <li class="list-group-item"><strong>1:</strong> Only 5 biscuit packets- limilT (no choco pie/Dark Fantasy )</li>
+                                <li class="list-group-item"><strong>2:</strong> Jacket / Sweater are not allowed and no Caps even</li>
+                                <li class="list-group-item"><strong>3:</strong> No one should come in civiL dress</li>
+                                <li class="list-group-item"><strong>4:</strong> Only Gurukul T-shirt , No other gurukul Jersey or any Other Gurukul Dress Code</li>
                             </ul>
                         </div>
                     </div>
@@ -3153,6 +3323,7 @@
                                 <option value="HARI KRISHNA TIWARI">HARI KRISHNA TIWARI</option>
                                 <option value="SHIVA KRISHNA">SHIVA KRISHNA</option>
                                 <option value="Manoj">Manoj</option>
+                                <option value="Rahul">Rahul</option>
                                 <option value="Testing Admin">Testing admin</option>
                             </select>
                         </div>
@@ -3237,14 +3408,14 @@
     <script>
         // --- FIREBASE INITIALIZATION ---
         const firebaseConfig = {
-            apiKey: "AIzaSyAtanJUJCZmcvGf_JS0ffKc1SlhMW8aWug",
-            authDomain: "gstatus-304a8.firebaseapp.com",
-            databaseURL: "https://gstatus-304a8-default-rtdb.firebaseio.com",
-            projectId: "gstatus-304a8",
-            storageBucket: "gstatus-304a8.firebasestorage.app",
-            messagingSenderId: "382807331706",
-            appId: "1:382807331706:web:c9e2a5236753e97580bcc3",
-            measurementId: "G-97JXW80ZLY"
+            apiKey: "AIzaSyAsFiadkeL-__gF_Lb5VY2iap4DlatkaX4",
+            authDomain: "senior-data-researchinnovation.firebaseapp.com",
+            databaseURL: "https://senior-data-researchinnovation-default-rtdb.firebaseio.com",
+            projectId: "senior-data-researchinnovation",
+            storageBucket: "senior-data-researchinnovation.appspot.com",
+            messagingSenderId: "587116206951",
+            appId: "1:587116206951:web:ddf6db02ecd19a63cf2dc2",
+            measurementId: "G-8E23BREM8V"
         };
 
 
@@ -3290,10 +3461,11 @@ try {
         // --- AUTHENTICATION LOGIC (from auth.html) ---
         const CODES = {
             'Pa&&word': 'admin',
-            'ENTROPHY': 'incharge'
+            'ENTROPHY': 'incharge',
+            'VAPE': 'teacher'
         };
 
-        let selectedRole = 'teacher'; // Default role for registration
+        let selectedRole = 'parent'; // Default role for registration
 
         document.querySelectorAll('.role-option').forEach(option => {
             option.addEventListener('click', function() {
@@ -4046,16 +4218,35 @@ try {
                 const row = document.createElement('tr');
                 
                 const parts = item.date.split('-');
+                if (parts.length !== 3) {
+                    console.warn('Invalid date format in canteenScheduleData:', item.date);
+                    return;
+                }
                 const year = parseInt(`20${parts[2]}`);
                 const month = parseInt(parts[1]) - 1;
                 const day = parseInt(parts[0]);
                 const startDateObj = new Date(year, month, day);
+                
+                if (isNaN(startDateObj.getTime())) {
+                    console.warn('Invalid date object created for:', item.date);
+                    return;
+                }
+
                 const endDateObj = new Date(startDateObj);
                 endDateObj.setDate(startDateObj.getDate() + 1);
                 
-                const format = (d) => d.toISOString().slice(0,10).replace(/-/g, '');
+                const format = (d) => {
+                    try {
+                        return d.toISOString().slice(0,10).replace(/-/g, '');
+                    } catch (e) {
+                        console.error('Error formatting date:', d, e);
+                        return '';
+                    }
+                };
                 const startStr = format(startDateObj);
                 const endStr = format(endDateObj);
+
+                if (!startStr || !endStr) return;
 
                 const eventTitle = `Canteen: ${item.allocation} (${item.batch})`;
                 const eventDetails = `Allocation: ${item.allocation}, Batch: ${item.batch}`;
@@ -4086,17 +4277,28 @@ try {
                 if (item.allocation === '-' || item.allocation === 'Ekadashi') return;
 
                 const parts = item.date.split('-');
+                if (parts.length !== 3) return;
+                
                 const year = "20" + parts[2];
                 const month = parts[1];
                 const day = parts[0];
                 const startDateStr = `${year}${month}${day}`;
                 
                 const startDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                if (isNaN(startDateObj.getTime())) return;
+
                 const endDateObj = new Date(startDateObj);
                 endDateObj.setDate(startDateObj.getDate() + 1);
                 
-                const format = (d) => d.toISOString().slice(0,10).replace(/-/g, '');
+                const format = (d) => {
+                    try {
+                        return d.toISOString().slice(0,10).replace(/-/g, '');
+                    } catch (e) {
+                        return '';
+                    }
+                };
                 const endDateStr = format(endDateObj);
+                if (!endDateStr) return;
 
                 icsContent += "BEGIN:VEVENT\r\n";
                 icsContent += `DTSTART;VALUE=DATE:${startDateStr}\r\n`;
@@ -4469,7 +4671,9 @@ try {
                     
                     let count = 0;
                     rawIds.forEach(id => {
-                        const lowerId = id.toLowerCase(); 
+                        const lowerId = id.toLowerCase(); // consistent casing
+                        // Check against existing (using lowercase check if possible, or just exact)
+                        // Simple check:
                         if (!window.manualCanteenExclusions.includes(id) && !window.manualCanteenExclusions.includes(lowerId)) {
                             window.manualCanteenExclusions.push(id);
                             count++;
@@ -6916,17 +7120,7 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
             }
         }
 
-        function initializeEventListeners() {
-            document.getElementById('positiveAction').addEventListener('change', function() {
-                document.getElementById('examPercentage').style.display = this.value === 'exam' ? 'block' : 'none';
-                document.getElementById('customPositiveInput').style.display = this.value === 'custom' ? 'block' : 'none';
-            });
-
-            document.querySelector('[name="negativeAction"]').addEventListener('change', function() {
-                document.getElementById('customNegativeInput').style.display = this.value === 'custom' ? 'block' : 'none';
-            });
-
-            // Function to validate student IDs and reject duplicates before processing
+        // Function to validate student IDs and reject duplicates before processing
         async function validateStudentIds(studentIds) {
             if (!Array.isArray(studentIds) || studentIds.length === 0) {
                 throw new Error('No student IDs provided');
@@ -6978,6 +7172,28 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
                 console.log(`No new student IDs for ${action} - all recently processed`);
             }
         }
+
+        function initializeEventListeners() {
+            // Parent Portal Listener
+            const btnCheckStudentStats = document.getElementById('btnCheckStudentStats');
+            if (btnCheckStudentStats) {
+                btnCheckStudentStats.addEventListener('click', checkStudentProgress);
+            }
+            const parentStudentMid = document.getElementById('parentStudentMid');
+            if (parentStudentMid) {
+                parentStudentMid.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') checkStudentProgress();
+                });
+            }
+
+            document.getElementById('positiveAction').addEventListener('change', function() {
+                document.getElementById('examPercentage').style.display = this.value === 'exam' ? 'block' : 'none';
+                document.getElementById('customPositiveInput').style.display = this.value === 'custom' ? 'block' : 'none';
+            });
+
+            document.querySelector('[name="negativeAction"]').addEventListener('change', function() {
+                document.getElementById('customNegativeInput').style.display = this.value === 'custom' ? 'block' : 'none';
+            });
 
             document.getElementById('pointsForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -7197,53 +7413,7 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
             }
         };
 
-        window.changeStudentRank = async function(studentId, currentPoints, studentName) {
-            const targetGrade = prompt(`Enter the desired rank for ${studentName} (A+, A, B, C, D, E):`);
-            if (targetGrade === null || targetGrade === "") return;
-            
-            const validGrades = ['A+', 'A', 'B', 'C', 'D', 'E'];
-            const normalizedGrade = targetGrade.toUpperCase().trim();
-            
-            if (!validGrades.includes(normalizedGrade)) {
-                alert("Please enter a valid rank (A+, A, B, C, D, or E).");
-                return;
-            }
-
-            const student = students.find(s => s.id === studentId);
-            if (!student) return;
-
-            if (confirm(`Set ${studentName}'s rank to ${normalizedGrade}?`)) {
-                try {
-                    // Update manualGrade in Firebase
-                    await updateStudentInFirebase(studentId, { manualGrade: normalizedGrade });
-
-                    const now = new Date();
-                    const date = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
-                    const time = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata' });
-                    
-                    await addHistoryEntryToFirebase({
-                        date,
-                        time,
-                        studentId: studentId,
-                        name: studentName,
-                        action: 'Rank Change',
-                        points: 0,
-                        modifiedBy: auth.currentUser ? auth.currentUser.email : 'Unknown',
-                        remark: `Manual Rank set to ${normalizedGrade}`
-                    });
-
-                    if (typeof refreshRankings === 'function') refreshRankings();
-                    alert(`Rank updated successfully! ${studentName} is now set to ${normalizedGrade}.`);
-                } catch (error) {
-                    console.error("Error updating rank:", error);
-                    alert("Failed to update rank. Please try again.");
-                }
-            }
-        };
-
 // ...existing code...
-            document.getElementById('exportRankings').addEventListener('click', exportToExcel);
-            document.getElementById('exportHistory').addEventListener('click', exportHistoryToExcel); 
             if (document.getElementById('exportHistorySheets')) {
                 document.getElementById('exportHistorySheets').addEventListener('click', exportHistoryToGoogleSheets);
             }
@@ -7842,7 +8012,7 @@ function refreshRankings() {
     <td>${student.class || ''}</td>
     <td>${student.section || ''}</td>
     <td class="text-center">
-        <button class="btn btn-sm btn-outline-primary" onclick="changeStudentRank('${student.id}', ${student.points || 0}, '${(student.name || '').replace(/'/g, "\\'")}')" title="Manually change rank for ${student.name}">
+        <button class="btn btn-sm btn-outline-primary" onclick="openRankChangeModal('${student.id}')" title="Manually change rank for ${student.name}">
             <i class="fas fa-sort-numeric-up"></i> Change Rank
         </button>
     </td>
@@ -7876,7 +8046,7 @@ function refreshRankings() {
     <td>${student.class || ''}</td>
     <td>${student.section || ''}</td>
     <td class="text-center">
-        <button class="btn btn-sm btn-outline-primary" onclick="changeStudentRank('${student.id}', ${student.points || 0}, '${(student.name || '').replace(/'/g, "\\'")}')" title="Manually change rank for ${student.name}">
+        <button class="btn btn-sm btn-outline-primary" onclick="openRankChangeModal('${student.id}')" title="Manually change rank for ${student.name}">
             <i class="fas fa-sort-numeric-up"></i> Change Rank
         </button>
     </td>
@@ -8252,13 +8422,12 @@ function refreshRankings() {
         // Enhanced spreadsheet creation with Drive integration
         async function createSpreadsheetWithDrive(title, rows, token) {
             try {
-                console.log('Creating spreadsheet with Drive integration...');
+                console.log('Creating spreadsheet with API key only...');
                 
-                // Create spreadsheet with API key
+                // Create spreadsheet with API key ONLY
                 const createResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets?key=${GOOGLE_API_KEY}`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -8269,20 +8438,13 @@ function refreshRankings() {
                 });
                 
                 if (!createResponse.ok) {
-                    const errorData = await createResponse.json();
-                    console.error('Sheets API error:', errorData);
-                    
-                    // Handle specific API errors
-                    if (errorData.error?.code === 403) {
-                        if (errorData.error?.message?.includes('Google Sheets API has not been used')) {
-                            throw new Error('Google Sheets API is not enabled for this project. Please enable it in Google Cloud Console and try again.');
-                        } else {
-                            throw new Error('Permission denied. Please make sure you are signed in with Google and have the necessary permissions.');
-                        }
-                    } else if (errorData.error?.code === 429) {
-                        throw new Error('Too many requests. Please wait a moment and try again.');
-                    } else {
-                        throw new Error(`Failed to create spreadsheet: ${errorData.error?.message || 'Unknown error'}`);
+                    const errorText = await createResponse.text();
+                    console.error('Sheets API error response:', errorText);
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        throw new Error(`Failed to create spreadsheet: ${errorData.error?.message || errorText}`);
+                    } catch (e) {
+                        throw new Error(`Failed to create spreadsheet: ${errorText}`);
                     }
                 }
                 
@@ -8290,11 +8452,10 @@ function refreshRankings() {
                 const spreadsheetId = spreadsheet.spreadsheetId;
                 console.log('Spreadsheet created with ID:', spreadsheetId);
                 
-                // Add data to spreadsheet
+                // Add data to spreadsheet using API key ONLY
                 const updateResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A1:Z1000?valueInputOption=USER_ENTERED&key=${GOOGLE_API_KEY}`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -8303,26 +8464,25 @@ function refreshRankings() {
                 });
                 
                 if (!updateResponse.ok) {
-                    const errorData = await updateResponse.json();
-                    console.error('Sheets API update error:', errorData);
-                    throw new Error(`Failed to add data to spreadsheet: ${errorData.error?.message || 'Unknown error'}`);
+                    const errorText = await updateResponse.text();
+                    console.error('Sheets API update error:', errorText);
+                    throw new Error(`Failed to add data: ${errorText}`);
                 }
                 
                 console.log('Data added to spreadsheet successfully');
                 
-                // Move spreadsheet to user's Drive folder
+                // Try to get file info
                 try {
                     await moveSpreadsheetToDrive(spreadsheetId, token);
-                    console.log('Spreadsheet moved to Drive successfully');
+                    console.log('Spreadsheet info retrieved');
                 } catch (driveError) {
-                    console.warn('Could not move to Drive:', driveError);
-                    // Continue anyway - the spreadsheet was created successfully
+                    console.warn('Could not retrieve Drive info:', driveError);
                 }
                 
                 return spreadsheetId;
                 
             } catch (error) {
-                console.error('Error creating spreadsheet with Drive integration:', error);
+                console.error('Error creating spreadsheet:', error);
                 throw error;
             }
         }
@@ -8330,27 +8490,26 @@ function refreshRankings() {
         // Move spreadsheet to user's Drive
         async function moveSpreadsheetToDrive(spreadsheetId, token) {
             try {
-                // Get file metadata
+                // Get file metadata using API key ONLY
                 const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${spreadsheetId}?key=${GOOGLE_API_KEY}`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Content-Type': 'application/json'
                     }
                 });
                 
                 if (!fileResponse.ok) {
-                    throw new Error('Failed to get file metadata');
+                    const errorText = await fileResponse.text();
+                    console.warn('Could not get file metadata:', errorText);
+                    return false;
                 }
                 
                 const file = await fileResponse.json();
-                
-                // Add to user's Drive (already should be there, but let's ensure it's properly organized)
-                // We can add it to a specific folder or just ensure it's visible
-                console.log('Spreadsheet is in Drive:', file.name, file.id);
+                console.log('Spreadsheet is accessible:', file.name);
                 
                 return true;
             } catch (error) {
-                console.error('Drive integration error:', error);
-                throw error;
+                console.error('Drive info error:', error);
+                return false;
             }
         }
 
@@ -9029,25 +9188,8 @@ filteredStudents.sort((a, b) => {
                     const newRating = selectedRatingInput ? parseInt(selectedRatingInput.value) : null;
 
                     if (newRating !== null) {
-                        let pointsAwarded = 0;
-                        let actionText = '';
-
-                        if (newRating === 5) {
-                            pointsAwarded = 10;
-                            actionText = 'Batch Discipline Review: Excellent (+10)';
-                        } else if (newRating === 4) {
-                            pointsAwarded = 5;
-                            actionText = 'Batch Discipline Review: Good (+5)';
-                        } else if (newRating === 3) {
-                            pointsAwarded = 0;
-                            actionText = 'Batch Discipline Review: Satisfactory (0)';
-                        } else if (newRating === 2) {
-                            pointsAwarded = -5;
-                            actionText = 'Batch Discipline Review: Needs Improvement (-5)';
-                        } else if (newRating === 1) {
-                            pointsAwarded = -10;
-                            actionText = 'Batch Discipline Review: Poor (-10)';
-                        }
+                        let pointsAwarded = newRating * 3;
+                        let actionText = `Batch Discipline Review: ${newRating} Stars (+${pointsAwarded})`;
 
                         const oldPoints = student.points;
                         const newPoints = oldPoints + pointsAwarded;
@@ -9099,123 +9241,9 @@ filteredStudents.sort((a, b) => {
             }
         }
 
-        async function submitRankChange(event) {
-            event.preventDefault();
-            const studentId = document.getElementById('rankChangeStudentId').value;
-            const newDesiredRank = parseInt(document.getElementById('newRankInput').value);
-            const adminModifier = document.getElementById('rankChangeAdminSelector').value;
-            const adminEmail = currentUserEmail;
-            const isERank = document.getElementById('rankChangerForm').dataset.isERank === 'true';
-
-            if (isNaN(newDesiredRank)) {
-                displayUpdateMessage('rankChangerMessage', 'Please enter a valid rank.', 'danger');
-                return;
-            }
-
-            if (!adminModifier) {
-                displayUpdateMessage('rankChangerMessage', 'Please select who is modifying the rank.', 'danger');
-                return;
-            }
-
-            if (!adminEmail) {
-                displayUpdateMessage('rankChangerMessage', 'Your email ID is missing. Please log in again.', 'danger');
-                return;
-            }
-
-            const studentToUpdate = students.find(s => s.id === studentId);
-            if (!studentToUpdate) {
-                displayUpdateMessage('rankChangerMessage', 'Student not found.', 'danger');
-                return;
-            }
-
-            const oldPoints = studentToUpdate.points;
-            const oldRank = getStudentRank(studentToUpdate, isERank);
-
-            let targetPoints = 0;
-            let actionDescription = '';
-
-            if (isERank) {
-                const floorERankStudents = students.filter(s => s.floor === studentToUpdate.floor && s.points < 0);
-                floorERankStudents.sort((a, b) => a.points - b.points);
-
-                if (newDesiredRank <= floorERankStudents.length) {
-                    targetPoints = floorERankStudents[newDesiredRank - 1].points;
-                    if (studentToUpdate.id === floorERankStudents[newDesiredRank - 1].id) {
-                        displayUpdateMessage('rankChangerMessage', `Student is already at E-Rank ${newDesiredRank} on their floor. No change needed.`, 'info');
-                        return;
-                    }
-                } else {
-                    targetPoints = floorERankStudents.length > 0 ? floorERankStudents[floorERankStudents.length - 1].points + 1 : 0;
-                }
-                actionDescription = `E-Rank Change (from E-Rank ${oldRank} to E-Rank ${newDesiredRank})`;
-
-            } else {
-                const floorStudents = students.filter(s => s.floor === studentToUpdate.floor && s.points >= 0);
-                floorStudents.sort((a, b) => b.points - a.points);
-
-                if (newDesiredRank <= floorStudents.length) {
-                    targetPoints = floorStudents[newDesiredRank - 1].points;
-                    if (studentToUpdate.id === floorStudents[newDesiredRank - 1].id) {
-                        displayUpdateMessage('rankChangerMessage', `Student is already at rank ${newDesiredRank} on their floor. No change needed.`, 'info');
-                        return;
-                    }
-                } else {
-                    targetPoints = floorStudents.length > 0 ? floorStudents[floorStudents.length - 1].points - 1 : 0;
-                    targetPoints = Math.max(0, targetPoints);
-                }
-                actionDescription = `Rank Change (from Rank ${oldRank} to Rank ${newDesiredRank})`;
-            }
-
-            const pointsAdjustment = targetPoints - oldPoints;
-
-            try {
-                await updateStudentInFirebase(studentToUpdate.id, { points: studentToUpdate.points + pointsAdjustment });
-
-                const now = new Date();
-                const date = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
-                const time = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata' });
-
-                await addHistoryEntryToFirebase({
-                    date,
-                    time,
-                    studentId: studentToUpdate.id,
-                    name: studentToUpdate.name,
-                    action: actionDescription,
-                    pointsChanged: pointsAdjustment,
-                    oldPoints: oldPoints,
-                    newPoints: studentToUpdate.points + pointsAdjustment,
-                    modifiedBy: `${adminModifier} (${adminEmail})`
-                });
-
-                displayUpdateMessage('rankChangerMessage', `Done, rank changed for ${studentToUpdate.name} by ${adminModifier} (${adminEmail}).`, 'success');
-                setTimeout(() => {
-                    rankChangerModal.hide();
-                    // UI will update via real-time listeners
-                }, 2000);
-
-            } catch (error) {
-                console.error("Error changing rank:", error);
-                displayUpdateMessage('rankChangerMessage', 'Error changing rank. Please try again.', 'danger');
-            }
-        }
-
-        function getStudentRank(student, isERank = false) {
-            let relevantStudents;
-            if (isERank) {
-                relevantStudents = students.filter(s => s.floor === student.floor && s.points < 0);
-                relevantStudents.sort((a, b) => a.points - b.points);
-            } else {
-                relevantStudents = students.filter(s => s.floor === student.floor && s.points >= 0);
-                relevantStudents.sort((a, b) => b.points - a.points);
-            }
-
-            const rankIndex = relevantStudents.findIndex(s => s.id === student.id);
-            return rankIndex !== -1 ? rankIndex + 1 : 'N/A';
-        }
-
         const rankChangerModal = new bootstrap.Modal(document.getElementById('rankChangerModal'));
 
-        function openRankChangeModal(studentId, isERank = false) {
+        function openRankChangeModal(studentId) {
             const student = students.find(s => s.id === studentId);
             if (!student) {
                 alert('Student not found!');
@@ -9227,38 +9255,25 @@ filteredStudents.sort((a, b) => {
             document.getElementById('rankChangeCurrentPoints').value = student.points;
             document.getElementById('rankChangeCurrentGrade').value = student.assignedGrade || 'N/A';
             document.getElementById('rankChangeAdminEmail').value = currentUserEmail;
-
-            const newRankInputLabel = document.querySelector('label[for="newRankInput"]');
-            if (newRankInputLabel) { // Added check for label existence
-                if (isERank) {
-                    newRankInputLabel.textContent = 'Desired New Rank (within E-Rank or to positive):';
-                    document.getElementById('newRankInput').min = '';
-                } else {
-                    newRankInputLabel.textContent = 'Desired New Rank (within floor):';
-                    document.getElementById('newRankInput').min = '1';
-                }
-            }
-
-            const rankChangerForm = document.getElementById('rankChangerForm');
-            if (rankChangerForm) { // Added check for form existence
-                rankChangerForm.dataset.isERank = isERank;
+            
+            const gradeSelect = document.getElementById('newGradeSelect');
+            if (gradeSelect) {
+                gradeSelect.value = student.assignedGrade || '';
             }
 
             displayUpdateMessage('rankChangerMessage', '', 'info');
-
             rankChangerModal.show();
         }
 
         async function submitRankChange(event) {
             event.preventDefault();
             const studentId = document.getElementById('rankChangeStudentId').value;
-            const newDesiredRank = parseInt(document.getElementById('newRankInput').value);
+            const newGrade = document.getElementById('newGradeSelect').value;
             const adminModifier = document.getElementById('rankChangeAdminSelector').value;
             const adminEmail = currentUserEmail;
-            const isERank = document.getElementById('rankChangerForm').dataset.isERank === 'true';
 
-            if (isNaN(newDesiredRank)) {
-                displayUpdateMessage('rankChangerMessage', 'Please enter a valid rank.', 'danger');
+            if (!newGrade || newGrade === "") {
+                displayUpdateMessage('rankChangerMessage', 'Please select a grade.', 'danger');
                 return;
             }
 
@@ -9272,54 +9287,56 @@ filteredStudents.sort((a, b) => {
                 return;
             }
 
-            const studentToUpdate = students.find(s => s.id === studentId);
-            if (!studentToUpdate) {
+            const student = students.find(s => s.id === studentId);
+            if (!student) {
                 displayUpdateMessage('rankChangerMessage', 'Student not found.', 'danger');
                 return;
             }
 
-            const oldPoints = studentToUpdate.points;
-            const oldRank = getStudentRank(studentToUpdate, isERank);
-
-            let targetPoints = 0;
-            let actionDescription = '';
-
-            if (isERank) {
-                const floorERankStudents = students.filter(s => s.floor === studentToUpdate.floor && s.points < 0);
-                floorERankStudents.sort((a, b) => a.points - b.points);
-
-                if (newDesiredRank <= floorERankStudents.length) {
-                    targetPoints = floorERankStudents[newDesiredRank - 1].points;
-                    if (studentToUpdate.id === floorERankStudents[newDesiredRank - 1].id) {
-                        displayUpdateMessage('rankChangerMessage', `Student is already at E-Rank ${newDesiredRank} on their floor. No change needed.`, 'info');
-                        return;
-                    }
-                } else {
-                    targetPoints = floorERankStudents.length > 0 ? floorERankStudents[floorERankStudents.length - 1].points + 1 : 0;
-                }
-                actionDescription = `E-Rank Change (from E-Rank ${oldRank} to E-Rank ${newDesiredRank})`;
-
-            } else {
-                const floorStudents = students.filter(s => s.floor === studentToUpdate.floor && s.points >= 0);
-                floorStudents.sort((a, b) => b.points - a.points);
-
-                if (newDesiredRank <= floorStudents.length) {
-                    targetPoints = floorStudents[newDesiredRank - 1].points;
-                    if (studentToUpdate.id === floorStudents[newDesiredRank - 1].id) {
-                        displayUpdateMessage('rankChangerMessage', `Student is already at rank ${newDesiredRank} on their floor. No change needed.`, 'info');
-                        return;
-                    }
-                } else {
-                    targetPoints = floorStudents.length > 0 ? floorStudents[floorStudents.length - 1].points - 1 : 0;
-                    targetPoints = Math.max(0, targetPoints);
-                }
-                actionDescription = `Rank Change (from Rank ${oldRank} to Rank ${newDesiredRank})`;
-            }
-
-            const pointsAdjustment = targetPoints - oldPoints;
-
             try {
-                await updateStudentInFirebase(studentId, { points: studentToUpdate.points + pointsAdjustment });
+                const floorFilter = student.floor;
+                let studentsOnFloor = students.filter(s => String(s.floor) === String(floorFilter));
+                const sortedForRanking = [...studentsOnFloor].filter(s => s.points >= 0)
+                    .sort((a, b) => b.points - a.points || String(a.id || '').localeCompare(String(b.id || '')));
+
+                let newPoints = student.points;
+                
+                if (newGrade === 'E') {
+                    if (newPoints >= 0) newPoints = -5;
+                } else if (newGrade === 'D') {
+                    if (newPoints < 0) newPoints = 0;
+                } else if (newGrade === 'C') {
+                    const thresholdIdx = Math.min(sortedForRanking.length - 1, 94);
+                    if (thresholdIdx >= 0) {
+                        const thresholdPoints = sortedForRanking[thresholdIdx].points;
+                        if (newPoints < thresholdPoints) newPoints = thresholdPoints;
+                    } else if (newPoints < 0) newPoints = 0;
+                } else if (newGrade === 'B') {
+                    const thresholdIdx = Math.min(sortedForRanking.length - 1, 74);
+                    if (thresholdIdx >= 0) {
+                        const thresholdPoints = sortedForRanking[thresholdIdx].points;
+                        if (newPoints < thresholdPoints) newPoints = thresholdPoints;
+                    } else if (newPoints < 0) newPoints = 0;
+                } else if (newGrade === 'A') {
+                    const thresholdIdx = Math.min(sortedForRanking.length - 1, 49);
+                    if (thresholdIdx >= 0) {
+                        const thresholdPoints = sortedForRanking[thresholdIdx].points;
+                        if (newPoints < thresholdPoints) newPoints = thresholdPoints;
+                    } else if (newPoints < 0) newPoints = 0;
+                } else if (newGrade === 'A+') {
+                    const thresholdIdx = Math.min(sortedForRanking.length - 1, 9);
+                    if (thresholdIdx >= 0) {
+                        const thresholdPoints = sortedForRanking[thresholdIdx].points;
+                        if (newPoints < thresholdPoints) newPoints = thresholdPoints;
+                    } else if (newPoints < 0) newPoints = 0;
+                }
+
+                const pointsChanged = newPoints - student.points;
+
+                await updateStudentInFirebase(studentId, { 
+                    manualGrade: newGrade === 'false' ? null : newGrade,
+                    points: newPoints
+                });
 
                 const now = new Date();
                 const date = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
@@ -9328,19 +9345,18 @@ filteredStudents.sort((a, b) => {
                 await addHistoryEntryToFirebase({
                     date,
                     time,
-                    studentId: studentToUpdate.id,
-                    name: studentToUpdate.name,
-                    action: actionDescription,
-                    pointsChanged: pointsAdjustment,
-                    oldPoints: oldPoints,
-                    newPoints: studentToUpdate.points + pointsAdjustment,
+                    studentId: studentId,
+                    name: student.name,
+                    action: `Rank Change to ${newGrade === 'false' ? 'Auto' : newGrade}`,
+                    pointsChanged: pointsChanged,
+                    oldPoints: student.points,
+                    newPoints: newPoints,
                     modifiedBy: `${adminModifier} (${adminEmail})`
                 });
 
-                displayUpdateMessage('rankChangerMessage', `Done, rank changed for ${studentToUpdate.name} by ${adminModifier} (${adminEmail}).`, 'success');
+                displayUpdateMessage('rankChangerMessage', `Done, rank changed for ${student.name} by ${adminModifier}.`, 'success');
                 setTimeout(() => {
                     rankChangerModal.hide();
-                    // UI will update via real-time listeners
                 }, 2000);
 
             } catch (error) {
@@ -9349,19 +9365,6 @@ filteredStudents.sort((a, b) => {
             }
         }
 
-        function getStudentRank(student, isERank = false) {
-            let relevantStudents;
-            if (isERank) {
-                relevantStudents = students.filter(s => s.floor === student.floor && s.points < 0);
-                relevantStudents.sort((a, b) => a.points - b.points);
-            } else {
-                relevantStudents = students.filter(s => s.floor === student.floor && s.points >= 0);
-                relevantStudents.sort((a, b) => b.points - a.points);
-            }
-
-            const rankIndex = relevantStudents.findIndex(s => s.id === student.id);
-            return rankIndex !== -1 ? rankIndex + 1 : 'N/A';
-        }
 
         function displayIndividualStudentData(studentId) {
             const student = students.find(s => s.id === studentId);
@@ -9513,128 +9516,132 @@ filteredStudents.sort((a, b) => {
                 "individual-data-tab", "canteen-tab", "predictive-analytics-tab", "notes-tab", "adjudicators-tab", "face-recognition-tab", "support-tab"
             ];
 
-
             const positivePointsSectionContainer = document.getElementById('positivePointsSectionContainer');
             const negativePointsSectionContainer = document.getElementById('negativePointsSectionContainer');
             const addPublicNoteBtn = document.getElementById('addPublicNoteBtn');
+            const dashboardTabs = document.getElementById('dashboardTabs');
+            const parentPortalContent = document.getElementById('parent-portal-content');
+            const homeDashboardContent = document.getElementById('home-dashboard-content');
+            const rolesManagerCard = document.getElementById('rolesManagerCard');
+            
+            // Home Tab Sections to Toggle
+            const homeAnnouncements = document.getElementById('homeAnnouncements');
+            const homeSupportSection = document.getElementById('homeSupportSection');
+            const homeBatchTimer = document.getElementById('homeBatchTimer');
+            const homePublicNotes = document.getElementById('homePublicNotes');
 
             // Canteen export buttons to control
             const exportToExcelBtn = document.getElementById('exportToExcel');
             const exportToGoogleSheetsBtn = document.getElementById('exportToGoogleSheets');
-                                    const printCanteenListBtn = document.getElementById('printCanteenList');
-                                    const manageCanteenDatesCard = document.getElementById('manageCanteenDatesCard');
-                                    const manualCanteenAddCard = document.getElementById('manualCanteenAddCard');
-                                    const canteenRemoveSection = document.getElementById('canteenRemoveSection'); // New
-                                    
-                                                // Canteen import and history elements to control for incharge
-                                    
-                                    const importStudentDataCard = document.querySelector('.card:has(#importStudentData)');
-                                    const dataChangeHistoryCard = document.querySelector('.card:has(#changeHistoryTable)');
-                        
-                                    // Hide all tabs and sections by default
-                                    tabsToControl.forEach(tabId => {
-                                        const tabElement = document.getElementById(tabId);
-                                        if (tabElement) {
-                                            tabElement.style.display = "none";
-                                        }
-                                    });
-                                    if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'none';
-                                    if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'none';
-                                    if (addPublicNoteBtn) addPublicNoteBtn.style.display = 'none'; // Hide public note add button by default
-                        
-                                    // Hide canteen export buttons by default
-                                    if (exportToExcelBtn) exportToExcelBtn.style.display = 'none';
-                                    if (exportToGoogleSheetsBtn) exportToGoogleSheetsBtn.style.display = 'none';
-                                                if (printCanteenListBtn) printCanteenListBtn.style.display = 'none';
-                                                if (manageCanteenDatesCard) manageCanteenDatesCard.style.display = 'none';
-                                                if (manualCanteenAddCard) manualCanteenAddCard.style.display = 'none'; // This is the consolidated card now
-                                                if (canteenRemoveSection) canteenRemoveSection.style.display = 'none'; // Hide remove section by default
-                                    
-                                                // Hide canteen import and history cards by default
-                                    
-                                    if (importStudentDataCard) importStudentDataCard.style.display = 'none';
-                                    if (dataChangeHistoryCard) dataChangeHistoryCard.style.display = 'none';
-                        
-                                    if (role === "admin") {
-                                        // Admin has access to everything including face scan and all canteen functions
-                                        tabsToControl.forEach(tabId => {
-                                            const tabElement = document.getElementById(tabId);
-                                            if (tabElement) {
-                                                tabElement.style.display = ""; // Show all for admin
-                                            }
-                                        });
-                                        if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'block';
-                                        if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'block';
-                                        // Ensure both sections take half width
-                                        if (positivePointsSectionContainer) positivePointsSectionContainer.classList.add('col-md-6');
-                                        if (negativePointsSectionContainer) negativePointsSectionContainer.classList.add('col-md-6');
-                                        if (negativePointsSectionContainer) negativePointsSectionContainer.classList.remove('offset-md-3');
-                                        if (addPublicNoteBtn) addPublicNoteBtn.style.display = 'block'; // Show public note add button for admin
-                        
-                                        // Show all canteen export buttons for admin
-                                        if (exportToExcelBtn) exportToExcelBtn.style.display = 'inline-block';
-                                        if (exportToGoogleSheetsBtn) exportToGoogleSheetsBtn.style.display = 'inline-block';
-                                                        if (printCanteenListBtn) printCanteenListBtn.style.display = 'inline-block';
-                                                        if (manageCanteenDatesCard) {
-                                                            manageCanteenDatesCard.style.display = 'block';
-                                                            renderCanteenManageTable();
-                                                        }
-                                                        if (manualCanteenAddCard) manualCanteenAddCard.style.display = 'block'; // Show the card
-                                                        if (canteenRemoveSection) canteenRemoveSection.style.display = 'block'; // Show remove section ONLY for admin
+            const printCanteenListBtn = document.getElementById('printCanteenList');
+            const manageCanteenDatesCard = document.getElementById('manageCanteenDatesCard');
+            const manualCanteenAddCard = document.getElementById('manualCanteenAddCard');
+            const canteenRemoveSection = document.getElementById('canteenRemoveSection');
+            
+            const importStudentDataCard = document.querySelector('.card:has(#importStudentData)');
+            const dataChangeHistoryCard = document.querySelector('.card:has(#changeHistoryTable)');
+            const parentIssuesTabItem = document.getElementById('parent-issues-tab-item');
+
+            // Reset visibility
+            if (dashboardTabs) dashboardTabs.style.display = 'flex';
+            if (parentPortalContent) parentPortalContent.style.display = 'none';
+            if (homeDashboardContent) homeDashboardContent.style.display = 'flex';
+            if (parentIssuesTabItem) parentIssuesTabItem.style.display = 'none';
+
+            // Show all home sections by default
+            if (homeAnnouncements) homeAnnouncements.style.display = 'block';
+            if (homeSupportSection) homeSupportSection.style.display = 'block';
+            if (homeBatchTimer) homeBatchTimer.style.display = 'block';
+            if (homePublicNotes) homePublicNotes.style.display = 'block';
+            if (rolesManagerCard) rolesManagerCard.style.display = 'none';
+
+            // Hide all tabs and sections by default
+            tabsToControl.forEach(tabId => {
+                const tabElement = document.getElementById(tabId);
+                if (tabElement) {
+                    tabElement.style.display = "none";
+                }
+            });
+            if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'none';
+            if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'none';
+            if (addPublicNoteBtn) addPublicNoteBtn.style.display = 'none';
+
+            // Hide canteen export buttons by default
+            if (exportToExcelBtn) exportToExcelBtn.style.display = 'none';
+            if (exportToGoogleSheetsBtn) exportToGoogleSheetsBtn.style.display = 'none';
+            if (printCanteenListBtn) printCanteenListBtn.style.display = 'none';
+            if (manageCanteenDatesCard) manageCanteenDatesCard.style.display = 'none';
+            if (manualCanteenAddCard) manualCanteenAddCard.style.display = 'none';
+            if (canteenRemoveSection) canteenRemoveSection.style.display = 'none';
+
+            if (importStudentDataCard) importStudentDataCard.style.display = 'none';
+            if (dataChangeHistoryCard) dataChangeHistoryCard.style.display = 'none';
+
+            if (role === "admin") {
+                tabsToControl.forEach(tabId => {
+                    const tabElement = document.getElementById(tabId);
+                    if (tabElement) tabElement.style.display = ""; 
+                });
+                if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'block';
+                if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'block';
+                if (positivePointsSectionContainer) positivePointsSectionContainer.classList.add('col-md-6');
+                if (negativePointsSectionContainer) negativePointsSectionContainer.classList.add('col-md-6');
+                if (negativePointsSectionContainer) negativePointsSectionContainer.classList.remove('offset-md-3');
+                if (addPublicNoteBtn) addPublicNoteBtn.style.display = 'block';
+                if (rolesManagerCard) rolesManagerCard.style.display = 'block';
+                if (parentIssuesTabItem) parentIssuesTabItem.style.display = 'block';
+
+                if (exportToExcelBtn) exportToExcelBtn.style.display = 'inline-block';
+                if (exportToGoogleSheetsBtn) exportToGoogleSheetsBtn.style.display = 'inline-block';
+                if (printCanteenListBtn) printCanteenListBtn.style.display = 'inline-block';
+                if (manageCanteenDatesCard) {
+                    manageCanteenDatesCard.style.display = 'block';
+                    renderCanteenManageTable();
+                }
+                if (manualCanteenAddCard) manualCanteenAddCard.style.display = 'block';
+                if (canteenRemoveSection) canteenRemoveSection.style.display = 'block';
+
             } else if (role === "incharge") {
-        // In-charge access: hide Rankings, History, Individual Data, Adjudicators, Face Scan
-        // Allow: Home, Administration, Batch Discipline, Student Management, Notes, Canteen, Analytics
-        const allowedTabs = [
-            "home-tab", "administration-tab", "batch-discipline-tab",
-            "student-management-tab", "notes-tab", "canteen-tab", "predictive-analytics-tab", "support-tab"
-        ];
-        allowedTabs.forEach(tabId => {
-            const tabElement = document.getElementById(tabId);
-            if (tabElement) {
-                tabElement.style.display = "";
-            }
-        });
-        if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'block';
-        if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'block';
-        if (positivePointsSectionContainer) positivePointsSectionContainer.classList.add('col-md-6');
-        if (negativePointsSectionContainer) negativePointsSectionContainer.classList.add('col-md-6');
-        if (negativePointsSectionContainer) negativePointsSectionContainer.classList.remove('offset-md-3');
-
-        // Explicitly hide restricted tabs for incharge
-        const rankingsTab = document.getElementById('rankings-tab');
-        if (rankingsTab) rankingsTab.style.display = 'none';
-        const responsesTab = document.getElementById('responses-tab');
-        if (responsesTab) responsesTab.style.display = 'none';
-        const individualDataTab = document.getElementById('individual-data-tab');
-        if (individualDataTab) individualDataTab.style.display = 'none';
-        const adjudicatorsTab = document.getElementById('adjudicators-tab');
-        if (adjudicatorsTab) adjudicatorsTab.style.display = 'none';
-        const faceRecognitionTab = document.getElementById('face-recognition-tab');
-        if (faceRecognitionTab) faceRecognitionTab.style.display = 'none';
-
-        // Hide canteen export buttons for incharge (no export functions)
-        // exportToExcelBtn, exportToGoogleSheetsBtn, printCanteenListBtn already hidden by default
-
-            } else if (role === "teacher") {
-                // Teacher has access to specific tabs and only negative points
                 const allowedTabs = [
                     "home-tab", "administration-tab", "batch-discipline-tab",
-                    "notes-tab" // Added notes-tab
+                    "student-management-tab", "notes-tab", "canteen-tab", "predictive-analytics-tab", "support-tab"
                 ];
                 allowedTabs.forEach(tabId => {
                     const tabElement = document.getElementById(tabId);
-                    if (tabElement) {
-                        tabElement.style.display = "";
-                    }
+                    if (tabElement) tabElement.style.display = "";
                 });
-                // Only negative points section is visible for teachers and centered
-                if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'none'; // Hide positive points
+                if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'block';
+                if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'block';
+                if (positivePointsSectionContainer) positivePointsSectionContainer.classList.add('col-md-6');
+                if (negativePointsSectionContainer) negativePointsSectionContainer.classList.add('col-md-6');
+                if (negativePointsSectionContainer) negativePointsSectionContainer.classList.remove('offset-md-3');
+
+                const rankingsTab = document.getElementById('rankings-tab');
+                if (rankingsTab) rankingsTab.style.display = 'none';
+                const responsesTab = document.getElementById('responses-tab');
+                if (responsesTab) responsesTab.style.display = 'none';
+                const individualDataTab = document.getElementById('individual-data-tab');
+                if (individualDataTab) individualDataTab.style.display = 'none';
+                const adjudicatorsTab = document.getElementById('adjudicators-tab');
+                if (adjudicatorsTab) adjudicatorsTab.style.display = 'none';
+                const faceRecognitionTab = document.getElementById('face-recognition-tab');
+                if (faceRecognitionTab) faceRecognitionTab.style.display = 'none';
+
+            } else if (role === "teacher") {
+                const allowedTabs = [
+                    "home-tab", "administration-tab", "batch-discipline-tab",
+                    "notes-tab"
+                ];
+                allowedTabs.forEach(tabId => {
+                    const tabElement = document.getElementById(tabId);
+                    if (tabElement) tabElement.style.display = "";
+                });
+                if (positivePointsSectionContainer) positivePointsSectionContainer.style.display = 'none';
                 if (negativePointsSectionContainer) {
-                    negativePointsSectionContainer.style.display = 'block'; // Show negative points
-                    negativePointsSectionContainer.classList.remove('col-md-6'); // Remove half width
-                    negativePointsSectionContainer.classList.add('col-md-6', 'offset-md-3'); // Center it
+                    negativePointsSectionContainer.style.display = 'block';
+                    negativePointsSectionContainer.classList.remove('col-md-6');
+                    negativePointsSectionContainer.classList.add('col-md-6', 'offset-md-3');
                 }
-                // Student Management, Rankings, Individual Data, and History are hidden for teacher
                 const studentManagementTab = document.getElementById('student-management-tab');
                 if (studentManagementTab) studentManagementTab.style.display = 'none';
                 const rankingsTab = document.getElementById('rankings-tab');
@@ -9643,12 +9650,222 @@ filteredStudents.sort((a, b) => {
                 if (individualDataTab) individualDataTab.style.display = 'none';
                 const responsesTab = document.getElementById('responses-tab');
                 if (responsesTab) responsesTab.style.display = 'none';
-                const adjudicatorsTab = document.getElementById('adjudicators-tab'); // Hide adjudicators tab for teacher
+                const adjudicatorsTab = document.getElementById('adjudicators-tab');
                 if (adjudicatorsTab) adjudicatorsTab.style.display = 'none';
+
+            } else if (role === "parent") {
+                // Parent View: Show dashboard, but hide restricted tabs
+                const allowedTabs = ["home-tab", "support-tab"];
+                allowedTabs.forEach(tabId => {
+                    const tabElement = document.getElementById(tabId);
+                    if (tabElement) tabElement.style.display = "";
+                });
+                
+                // Hide restricted tabs
+                const restrictedTabs = ["rankings-tab", "responses-tab", "student-management-tab", "administration-tab", "batch-discipline-tab", "individual-data-tab", "canteen-tab", "predictive-analytics-tab", "notes-tab", "adjudicators-tab", "face-recognition-tab"];
+                restrictedTabs.forEach(tabId => {
+                    const tabElement = document.getElementById(tabId);
+                    if (tabElement) tabElement.style.display = "none";
+                });
+
+                if (dashboardTabs) dashboardTabs.style.display = 'flex'; // Show sidebar
+                if (homeDashboardContent) homeDashboardContent.style.display = 'none'; // Hide normal home content
+                if (parentPortalContent) parentPortalContent.style.display = 'block'; // Show parent portal
+                
+                // Hide specific home sections
+                if (homeAnnouncements) homeAnnouncements.style.display = 'none';
+                if (homeSupportSection) homeSupportSection.style.display = 'none';
+                if (homeBatchTimer) homeBatchTimer.style.display = 'none';
+                if (homePublicNotes) homePublicNotes.style.display = 'none';
             }
-            // Re-check discipline tab access after role-based display is set
+
             checkDisciplineTabAccess();
-            renderPublicNotes(); // Re-render public notes to update button visibility
+            renderPublicNotes();
+        }
+
+        // Parent Portal Logic
+        function checkStudentProgress() {
+            const midInput = document.getElementById('parentStudentMid');
+            const resultDiv = document.getElementById('parentStudentResult');
+            const mid = midInput.value.trim().toUpperCase(); // Input is MID, but we match against ID/MID
+
+            if (!mid) {
+                alert("Please enter a valid Student MID.");
+                return;
+            }
+
+            const student = students.find(s => (s.id || s.MID || '').toUpperCase() === mid);
+
+            if (student) {
+                const grade = getGradeForStudent(student);
+                const badgeClass = getRankBadgeClass(grade);
+                
+                // Fetch History
+                const studentHistory = responseHistory.filter(entry => entry.studentId === student.id)
+                    .sort((a, b) => {
+                        const dateA = new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`);
+                        const dateB = new Date(`${b.date.split('/').reverse().join('-')}T${b.time}`);
+                        return dateB - dateA;
+                    });
+
+                let historyHTML = '';
+                if (studentHistory.length === 0) {
+                    historyHTML = '<tr><td colspan="4" class="text-center">No history found for this student.</td></tr>';
+                } else {
+                    studentHistory.forEach(entry => {
+                        historyHTML += `
+                            <tr>
+                                <td>${entry.date} ${entry.time}</td>
+                                <td>${entry.action}</td>
+                                <td class="${entry.pointsChanged >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${entry.pointsChanged > 0 ? '+' : ''}${entry.pointsChanged}
+                                </td>
+                                <td>${entry.modifiedBy || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="card border-info shadow mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-user-graduate"></i> Student Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h2 class="card-title text-primary mb-3">${student.name}</h2>
+                                    <p class="card-text fs-5"><strong>ID:</strong> ${student.id}</p>
+                                    <p class="card-text fs-5"><strong>Class:</strong> ${student.class || 'N/A'} - ${student.section || 'N/A'}</p>
+                                </div>
+                                <div class="col-md-6 text-center">
+                                    <div class="p-3 bg-light rounded border mb-3">
+                                        <h4 class="text-muted">Current Performance</h4>
+                                        <h1 class="display-4 fw-bold text-primary my-2">${student.points || 0} <small class="fs-6 text-muted">Pts</small></h1>
+                                        <span class="badge ${badgeClass} fs-5 px-4 py-2">Rank Grade: ${grade}</span>
+                                    </div>
+                                    <div class="row text-start px-3">
+                                        <div class="col-6">
+                                            <p class="mb-1 text-muted small uppercase fw-bold">Room No</p>
+                                            <p class="fs-5 fw-bold">${student.room || 'N/A'}</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <p class="mb-1 text-muted small uppercase fw-bold">Floor</p>
+                                            <p class="fs-5 fw-bold">${student.floor || 'N/A'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="fas fa-history"></i> Points History</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover mb-0">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>Date & Time</th>
+                                            <th>Action</th>
+                                            <th>Points</th>
+                                            <th>Modified By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${historyHTML}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="fas fa-headset"></i> Parent Support</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Report an issue specifically regarding this student or the portal.</p>
+                            <form id="parentSupportForm">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Issue Title</label>
+                                    <input type="text" class="form-control" id="parentIssueTitle" required placeholder="Brief summary of the issue">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Description</label>
+                                    <textarea class="form-control" id="parentIssueDescription" rows="4" required placeholder="Detailed description..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="fas fa-paper-plane"></i> Submit Issue
+                                </button>
+                            </form>
+                            <div id="parentSupportMessage" class="mt-3 alert" style="display:none;"></div>
+                        </div>
+                    </div>
+                `;
+                
+                // Bind Parent Support Form
+                const pForm = document.getElementById('parentSupportForm');
+                if (pForm) {
+                    pForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const title = document.getElementById('parentIssueTitle').value.trim();
+                        const desc = document.getElementById('parentIssueDescription').value.trim();
+                        const msgEl = document.getElementById('parentSupportMessage');
+                        
+                        if(!title || !desc) return;
+                        
+                        const btn = pForm.querySelector('button');
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Sending...';
+                        
+                        const newIssue = {
+                            title: `[Parent Portal] ${title}`,
+                            description: `Student ID: ${student.id}\nName: ${student.name}\n\n${desc}`,
+                            status: 'open',
+                            timestamp: firebase.database.ServerValue.TIMESTAMP,
+                            createdBy: {
+                                uid: currentUserUid || 'parent_user',
+                                email: currentUserEmail || 'parent_email',
+                                name: 'Parent User',
+                                role: 'parent'
+                            },
+                            upvotes: {}
+                        };
+                        
+                        database.ref('supportIssues').push(newIssue)
+                            .then(() => {
+                                msgEl.className = 'alert alert-success mt-3';
+                                msgEl.innerHTML = 'Issue reported successfully!';
+                                msgEl.style.display = 'block';
+                                pForm.reset();
+                            })
+                            .catch(err => {
+                                msgEl.className = 'alert alert-danger mt-3';
+                                msgEl.textContent = 'Error: ' + err.message;
+                                msgEl.style.display = 'block';
+                            })
+                            .finally(() => {
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Issue';
+                                setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+                            });
+                    });
+                }
+
+                resultDiv.style.display = 'block';
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger text-center">
+                        <i class="fas fa-exclamation-circle fa-2x mb-3"></i><br>
+                        <strong>Student Not Found</strong><br>
+                        No student found with MID: <strong>${mid}</strong>. Please check the ID and try again.
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+            }
         }
 
         // New function for Batch Discipline Timer
@@ -12208,15 +12425,18 @@ async function submitSupportIssue(e) {
 // Render issues list
 function renderSupportIssues(issuesData) {
     const issuesList = document.getElementById('issuesList');
+    const parentIssuesList = document.getElementById('parentIssuesList');
     if (!issuesList) return;
     
     if (!issuesData) {
-        issuesList.innerHTML = `
+        const emptyMsg = `
             <div class="text-center p-5 text-muted">
                 <i class="fas fa-clipboard-check fa-3x mb-3 text-secondary" style="opacity: 0.5;"></i>
                 <h5>No issues found</h5>
                 <p>Everything is running smoothly!</p>
             </div>`;
+        issuesList.innerHTML = emptyMsg;
+        if (parentIssuesList) parentIssuesList.innerHTML = emptyMsg;
         return;
     }
 
@@ -12229,6 +12449,7 @@ function renderSupportIssues(issuesData) {
     issues.sort((a, b) => b.timestamp - a.timestamp);
 
     issuesList.innerHTML = '';
+    if (parentIssuesList) parentIssuesList.innerHTML = '';
     
     issues.forEach(issue => {
         const date = issue.timestamp ? new Date(issue.timestamp).toLocaleString() : 'N/A';
@@ -12237,6 +12458,7 @@ function renderSupportIssues(issuesData) {
         const isUpvoted = currentUserUid && upvotes[currentUserUid];
         const isFixed = issue.status === 'fixed';
         const isAdmin = currentUserRole === 'admin';
+        const isParentIssue = issue.createdBy && (issue.createdBy.role === 'parent' || String(issue.title).includes('[Parent Portal]'));
         
         const card = document.createElement('div');
         card.className = `card mb-3 border-0 shadow-sm ${isFixed ? 'bg-light' : 'bg-white'}`;
@@ -12247,7 +12469,8 @@ function renderSupportIssues(issuesData) {
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
                         <h6 class="card-title mb-1 fw-bold ${isFixed ? 'text-success' : 'text-dark'}">
-                            ${isFixed ? '<i class="fas fa-check-circle me-1"></i>' : ''} ${issue.title}
+                            ${isFixed ? '<i class="fas fa-check-circle me-1"></i>' : ''} 
+                            ${issue.title}
                         </h6>
                         <div class="text-muted small">
                             <i class="fas fa-user-circle me-1"></i> ${issue.createdBy ? issue.createdBy.name : 'Unknown'} 
@@ -12280,8 +12503,21 @@ function renderSupportIssues(issuesData) {
                 </div>
             </div>
         `;
-        issuesList.appendChild(card);
+        
+        if (isParentIssue) {
+            if (parentIssuesList) parentIssuesList.appendChild(card);
+        } else {
+            issuesList.appendChild(card);
+        }
     });
+
+    // Check if lists are empty after sorting
+    if (issuesList.innerHTML === '') {
+        issuesList.innerHTML = '<div class="text-center p-5 text-muted">No internal issues found.</div>';
+    }
+    if (parentIssuesList && parentIssuesList.innerHTML === '') {
+        parentIssuesList.innerHTML = '<div class="text-center p-5 text-muted">No parent issues found.</div>';
+    }
 }
 
 // Toggle Upvote
@@ -12318,10 +12554,126 @@ function toggleIssueStatus(issueId, isFixed) {
     });
 }
 
+// --- ROLES MANAGER LOGIC ---
+let rolesManagerUnlocked = false;
+
+function initRolesManager() {
+    const card = document.getElementById('rolesManagerCard');
+    const authDiv = document.getElementById('rolesManagerAuth');
+    const contentDiv = document.getElementById('rolesManagerContent');
+    const passwordInput = document.getElementById('rolesManagerPassword');
+    const unlockBtn = document.getElementById('unlockRolesManagerBtn');
+    const lockBtn = document.getElementById('lockRolesManagerBtn');
+    const errorMsg = document.getElementById('rolesManagerAuthError');
+
+    // Only show card for admins (initial check, also handled in checkUserRole)
+    if (currentUserRole === 'admin') {
+        card.style.display = 'block';
+    }
+
+    // Unlock
+    unlockBtn.addEventListener('click', () => {
+        if (passwordInput.value === 'VIBGYOR') {
+            rolesManagerUnlocked = true;
+            authDiv.style.display = 'none';
+            contentDiv.style.display = 'block';
+            passwordInput.value = '';
+            errorMsg.style.display = 'none';
+            loadRolesData();
+        } else {
+            errorMsg.textContent = 'Incorrect password.';
+            errorMsg.style.display = 'block';
+        }
+    });
+
+    // Lock
+    lockBtn.addEventListener('click', () => {
+        rolesManagerUnlocked = false;
+        authDiv.style.display = 'block';
+        contentDiv.style.display = 'none';
+    });
+
+    // Handle Enter key on password
+    passwordInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') unlockBtn.click();
+    });
+}
+
+function loadRolesData() {
+    if (!rolesManagerUnlocked) return;
+
+    database.ref('userRoles').once('value').then(snapshot => {
+        const users = snapshot.val() || {};
+        const teachers = [];
+        const admins = [];
+        const incharges = [];
+
+        Object.entries(users).forEach(([uid, data]) => {
+            const user = { uid, ...data };
+            if (user.role === 'teacher') teachers.push(user);
+            else if (user.role === 'admin') admins.push(user);
+            else if (user.role === 'incharge') incharges.push(user);
+        });
+
+        renderRolesTable('list-teachers', teachers);
+        renderRolesTable('list-admins', admins);
+        renderRolesTable('list-incharges', incharges);
+    });
+}
+
+function renderRolesTable(tbodyId, users) {
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = '';
+
+    if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No users found for this role.</td></tr>';
+        return;
+    }
+
+    users.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${user.name || 'N/A'}</td>
+            <td>${user.email || 'N/A'}</td>
+            <td><span class="badge bg-primary">${user.role}</span></td>
+            <td>
+                <button class="btn btn-sm btn-danger remove-role-btn" data-uid="${user.uid}" data-name="${user.name}">
+                    <i class="fas fa-user-times"></i> Remove
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Attach event listeners
+    tbody.querySelectorAll('.remove-role-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const uid = this.dataset.uid;
+            const name = this.dataset.name;
+            if (confirm(`Are you sure you want to remove the ${currentUserRole} role from ${name}? They will become a regular user.`)) {
+                updateUserRole(uid, 'user');
+            }
+        });
+    });
+}
+
+function updateUserRole(uid, newRole) {
+    database.ref('userRoles/' + uid).update({ role: newRole })
+        .then(() => {
+            alert('User role updated successfully.');
+            loadRolesData(); // Refresh list
+        })
+        .catch(error => {
+            console.error('Error updating role:', error);
+            alert('Failed to update user role.');
+        });
+}
+
 // Initialize the app
 $(document).ready(function() {
     initOnlineStatus();
     initSupportPage();
+    initRolesManager(); // Initialize Roles Manager
     // Your existing initialization code...
 });
     </script>
