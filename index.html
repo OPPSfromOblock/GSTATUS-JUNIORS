@@ -3627,44 +3627,66 @@ try {
             showLoading();
             
             // Input validation
-            if (!studentId || typeof studentId !== 'string') {
-                console.error('Invalid studentId provided:', studentId);
+            if (!studentId) {
+                console.error('No studentId provided to updateStudentInFirebase');
                 hideLoading();
-                throw new Error('Invalid student ID provided');
+                throw new Error('Invalid student ID');
             }
             
             if (!updatedFields || typeof updatedFields !== 'object' || Object.keys(updatedFields).length === 0) {
                 console.error('Invalid updatedFields provided:', updatedFields);
                 hideLoading();
-                throw new Error('Invalid updated fields provided');
+                throw new Error('No fields to update');
             }
-            // Find the Firebase key for the student based on their ID
-            // This is necessary because Firebase keys are auto-generated, but we use 'id' as a unique identifier
-            // If you're using student.id as the direct Firebase key, this lookup isn't needed.
-            // Assuming 'id' is a property within the student object, and Firebase keys are auto-generated.
-            // If student.id IS the Firebase key, simplify to database.ref('students/' + studentId).update(updatedFields)
+
+            // Ensure points is a number if it's being updated
+            if (updatedFields.points !== undefined) {
+                updatedFields.points = Number(updatedFields.points);
+                if (isNaN(updatedFields.points)) {
+                    console.error('Attempted to update points with NaN');
+                    hideLoading();
+                    throw new Error('Invalid points value (NaN)');
+                }
+            }
+
             const studentRef = database.ref('students');
             let firebaseKey = null;
 
-            // Fetch all students once to find the correct Firebase key
-            const snapshot = await studentRef.orderByChild('id').equalTo(studentId).once('value');
-            snapshot.forEach(childSnapshot => {
-                firebaseKey = childSnapshot.key;
-            });
+            // 1. Try to find the key from the local students array first (fastest)
+            const localStudent = students.find(s => s.id === studentId || s.firebaseKey === studentId);
+            if (localStudent && localStudent.firebaseKey) {
+                firebaseKey = localStudent.firebaseKey;
+            }
+
+            // 2. Fallback: Search Firebase if not found locally or if studentId might be a key itself
+            if (!firebaseKey) {
+                const snapshot = await studentRef.orderByChild('id').equalTo(studentId).once('value');
+                if (snapshot.exists()) {
+                    snapshot.forEach(childSnapshot => {
+                        firebaseKey = childSnapshot.key;
+                    });
+                } else {
+                    // Check if studentId is actually a direct key
+                    const keySnapshot = await studentRef.child(studentId).once('value');
+                    if (keySnapshot.exists()) {
+                        firebaseKey = studentId;
+                    }
+                }
+            }
 
             if (firebaseKey) {
                 return studentRef.child(firebaseKey).update(updatedFields)
                     .then(() => {
-                        console.log(`Student ${studentId} updated in Firebase under key ${firebaseKey}`);
+                        console.log(`Student ${studentId} updated successfully.`);
                         hideLoading();
                     })
                     .catch(error => {
-                        console.error(`Error updating student ${studentId} under key ${firebaseKey}:`, error);
+                        console.error(`Error updating student ${studentId}:`, error);
                         hideLoading();
                         throw error;
                     });
             } else {
-                console.error(`Student with ID ${studentId} not found in Firebase to update.`);
+                console.error(`Student with ID ${studentId} not found in database.`);
                 hideLoading();
                 throw new Error(`Student with ID ${studentId} not found.`);
             }
@@ -3687,15 +3709,8 @@ try {
                 throw new Error('Missing required fields in history entry');
             }
             
-            // VALIDATION 1: Check if student ID exists in students database
-            const studentSnapshot = await database.ref('students').orderByChild('id').equalTo(entry.studentId).once('value');
-            if (!studentSnapshot.exists()) {
-                hideLoading();
-                throw new Error(`Student ID ${entry.studentId} not found in student database`);
-            }
-            
-            // VALIDATION 2: Check for duplicate entry for same student ID on same date
-            const today = new Date().toLocaleDateString('en-GB');
+            // Simplified duplicate check: Only reject if the EXACT same timestamp and action exists
+            // (Standard behavior for multiple deductions)
             const historySnapshot = await database.ref('history')
                 .orderByChild('studentId')
                 .equalTo(entry.studentId)
@@ -3705,6 +3720,7 @@ try {
             historySnapshot.forEach(childSnapshot => {
                 const historyEntry = childSnapshot.val();
                 if (historyEntry.date === entry.date && 
+                    historyEntry.time === entry.time &&
                     historyEntry.action === entry.action &&
                     historyEntry.pointsChanged === entry.pointsChanged) {
                     duplicateFound = true;
@@ -3713,13 +3729,12 @@ try {
             
             if (duplicateFound) {
                 hideLoading();
-                console.warn(`Duplicate entry rejected for student ${entry.studentId} on ${entry.date}`);
-                return; // Silently reject duplicate
+                console.warn(`Duplicate entry rejected for student ${entry.studentId} at ${entry.time}`);
+                return; 
             }
             
             return database.ref('history').push(entry)
                 .then(() => {
-                    console.log(`History entry added for student ${entry.studentId} on ${entry.date}`);
                     hideLoading();
                 })
                 .catch(error => {
@@ -6814,6 +6829,21 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
                     document.getElementById('totalStudents').textContent = students.length;
                     document.getElementById('activeStudents').textContent = students.filter(s => s.active).length;
                     
+                    // Populate room list for canteen
+                    try {
+                        const uniqueRooms = Array.from(new Set(students.map(s => {
+                            const room = String(s.roomNo || s.room || '').trim();
+                            const cup = s.cup || '';
+                            if (room && cup) return `${room}/${cup}`;
+                            return room;
+                        }).filter(Boolean))).sort((a,b)=>String(a).localeCompare(String(b)));
+                        const roomSelect = document.getElementById('canteenRoomInput');
+                        if (roomSelect && roomSelect.tagName === 'SELECT') {
+                            const options = ['<option value="">Select Room</option>'].concat(uniqueRooms.map(r=>`<option value="${r}">${r}</option>`));
+                            roomSelect.innerHTML = options.join('');
+                        }
+                    } catch (_) {}
+
                     refreshRankings();
                     renderStudentManagementTable();
                     renderBatchDisciplineTable();
@@ -7124,18 +7154,20 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
         for (const studentId of selectedStudentIds) {
             const student = students.find(s => s.id === studentId);
             if (student) {
-                const oldPoints = student.points;
+                // Ensure oldPoints is a number to prevent NaN
+                const oldPoints = Number(student.points) || 0;
                 const newPoints = oldPoints + points;
                 studentNames.push(student.name);
 
-                // Update student points in Firebase
-                updatePromises.push(updateStudentInFirebase(student.id, { points: newPoints }));
+                // Update student points in Firebase - use firebaseKey if available for more reliable update
+                const targetId = student.firebaseKey || student.id;
+                updatePromises.push(updateStudentInFirebase(targetId, { points: newPoints }));
 
                 // Add history entry to Firebase
                 updatePromises.push(addHistoryEntryToFirebase({
                     date,
                     time,
-                    studentId,
+                    studentId: student.id,
                     name: student.name,
                     action: actionText,
                     pointsChanged: points,
@@ -7228,7 +7260,9 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
                         studentId: studentId,
                         name: studentName,
                         action: 'Rank Change',
-                        points: 0,
+                        pointsChanged: 0,
+                        oldPoints: Number(student.points) || 0,
+                        newPoints: Number(student.points) || 0,
                         modifiedBy: auth.currentUser ? auth.currentUser.email : 'Unknown',
                         remark: `Manual Rank set to ${normalizedGrade}`
                     });
@@ -9050,13 +9084,14 @@ filteredStudents.sort((a, b) => {
                             actionText = 'Batch Discipline Review: Poor (-10)';
                         }
 
-                        const oldPoints = student.points;
+                        const oldPoints = Number(student.points) || 0;
                         const newPoints = oldPoints + pointsAwarded;
 
                         studentNames.push(student.name);
 
-                        // Update student points in Firebase
-                        updatePromises.push(updateStudentInFirebase(student.id, { points: newPoints }));
+                        // Update student points in Firebase - use firebaseKey if available
+                        const targetId = student.firebaseKey || student.id;
+                        updatePromises.push(updateStudentInFirebase(targetId, { points: newPoints }));
 
                         // Add history entry to Firebase
                         updatePromises.push(addHistoryEntryToFirebase({
@@ -9129,39 +9164,39 @@ filteredStudents.sort((a, b) => {
                 return;
             }
 
-            const oldPoints = studentToUpdate.points;
+            const oldPoints = Number(studentToUpdate.points) || 0;
             const oldRank = getStudentRank(studentToUpdate, isERank);
 
             let targetPoints = 0;
             let actionDescription = '';
 
             if (isERank) {
-                const floorERankStudents = students.filter(s => s.floor === studentToUpdate.floor && s.points < 0);
-                floorERankStudents.sort((a, b) => a.points - b.points);
+                const floorERankStudents = students.filter(s => s.floor === studentToUpdate.floor && (Number(s.points) || 0) < 0);
+                floorERankStudents.sort((a, b) => (Number(a.points) || 0) - (Number(b.points) || 0));
 
                 if (newDesiredRank <= floorERankStudents.length) {
-                    targetPoints = floorERankStudents[newDesiredRank - 1].points;
+                    targetPoints = Number(floorERankStudents[newDesiredRank - 1].points) || 0;
                     if (studentToUpdate.id === floorERankStudents[newDesiredRank - 1].id) {
                         displayUpdateMessage('rankChangerMessage', `Student is already at E-Rank ${newDesiredRank} on their floor. No change needed.`, 'info');
                         return;
                     }
                 } else {
-                    targetPoints = floorERankStudents.length > 0 ? floorERankStudents[floorERankStudents.length - 1].points + 1 : 0;
+                    targetPoints = floorERankStudents.length > 0 ? (Number(floorERankStudents[floorERankStudents.length - 1].points) || 0) + 1 : 0;
                 }
                 actionDescription = `E-Rank Change (from E-Rank ${oldRank} to E-Rank ${newDesiredRank})`;
 
             } else {
-                const floorStudents = students.filter(s => s.floor === studentToUpdate.floor && s.points >= 0);
-                floorStudents.sort((a, b) => b.points - a.points);
+                const floorStudents = students.filter(s => s.floor === studentToUpdate.floor && (Number(s.points) || 0) >= 0);
+                floorStudents.sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0));
 
                 if (newDesiredRank <= floorStudents.length) {
-                    targetPoints = floorStudents[newDesiredRank - 1].points;
+                    targetPoints = Number(floorStudents[newDesiredRank - 1].points) || 0;
                     if (studentToUpdate.id === floorStudents[newDesiredRank - 1].id) {
                         displayUpdateMessage('rankChangerMessage', `Student is already at rank ${newDesiredRank} on their floor. No change needed.`, 'info');
                         return;
                     }
                 } else {
-                    targetPoints = floorStudents.length > 0 ? floorStudents[floorStudents.length - 1].points - 1 : 0;
+                    targetPoints = floorStudents.length > 0 ? (Number(floorStudents[floorStudents.length - 1].points) || 0) - 1 : 0;
                     targetPoints = Math.max(0, targetPoints);
                 }
                 actionDescription = `Rank Change (from Rank ${oldRank} to Rank ${newDesiredRank})`;
@@ -9170,7 +9205,9 @@ filteredStudents.sort((a, b) => {
             const pointsAdjustment = targetPoints - oldPoints;
 
             try {
-                await updateStudentInFirebase(studentToUpdate.id, { points: studentToUpdate.points + pointsAdjustment });
+                const newPoints = oldPoints + pointsAdjustment;
+                const targetId = studentToUpdate.firebaseKey || studentToUpdate.id;
+                await updateStudentInFirebase(targetId, { points: newPoints });
 
                 const now = new Date();
                 const date = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
@@ -9184,7 +9221,7 @@ filteredStudents.sort((a, b) => {
                     action: actionDescription,
                     pointsChanged: pointsAdjustment,
                     oldPoints: oldPoints,
-                    newPoints: studentToUpdate.points + pointsAdjustment,
+                    newPoints: newPoints,
                     modifiedBy: `${adminModifier} (${adminEmail})`
                 });
 
@@ -10778,7 +10815,7 @@ filteredStudents.sort((a, b) => {
                     floorStats[floor] = { totalStudents: 0, totalPoints: 0, positiveEntries: 0, negativeEntries: 0, atRiskCount: 0 };
                 }
                 floorStats[floor].totalStudents++;
-                floorStats[floor].totalPoints += student.points;
+                floorStats[floor].totalPoints += Number(student.points) || 0;
 
                 // Calculate risk for this student
                 const history = getStudentHistory(student.id);
@@ -10890,7 +10927,7 @@ filteredStudents.sort((a, b) => {
                     floorStats[floor] = { totalStudents: 0, totalPoints: 0 };
                 }
                 floorStats[floor].totalStudents++;
-                floorStats[floor].totalPoints += student.points;
+                floorStats[floor].totalPoints += Number(student.points) || 0;
             });
 
             const sortedFloors = Object.keys(floorStats).sort((a, b) => a - b);
@@ -10931,91 +10968,7 @@ filteredStudents.sort((a, b) => {
         <script>
                 window.featureFlags = Object.assign({ simpleListDefault: true, viewModeDefault: 'all', sheetsEnhancedErrors: true }, window.featureFlags || {});
                 (function(){ if (!document.querySelector('link[rel="icon"]')){ var l=document.createElement('link'); l.rel='icon'; l.href='data:,'; document.head.appendChild(l);} })();
-                // Setup real-time listeners for students and history
-                database.ref('students').on('value', snapshot => {
-                    const data = snapshot.val();
-                    // Convert object of objects to array of objects, preserving Firebase keys if needed
-                    // For student management, we assume 'id' is unique and used for lookup
-                    students = [];
-                    if (data) {
-                        for (const key in data) {
-                            if (data.hasOwnProperty(key)) {
-                                students.push({ ...data[key], firebaseKey: key }); // Store Firebase key for direct updates
-                            }
-                        }
-                    }
-                    try {
-                        const uniqueRooms = Array.from(new Set(students.map(s => {
-                            const room = String(s.roomNo || s.room || '').trim();
-                            const cup = s.cup || '';
-                            // Combine room and cup if both exist
-                            if (room && cup) {
-                                return `${room}/${cup}`;
-                            }
-                            return room;
-                        }).filter(Boolean))).sort((a,b)=>String(a).localeCompare(String(b)));
-                        const roomSelect = document.getElementById('canteenRoomInput');
-                        if (roomSelect && roomSelect.tagName === 'SELECT') {
-                            const options = ['<option value="">Select Room</option>'].concat(uniqueRooms.map(r=>`<option value="${r}">${r}</option>`));
-                            roomSelect.innerHTML = options.join('');
-                        }
-                    } catch (_){}
-                    console.log("Students data updated from Firebase (real-time)");
-                    document.getElementById('totalStudents').textContent = students.length;
-                    document.getElementById('activeStudents').textContent = students.filter(s => s.active).length;
-                    refreshRankings(); // Re-render rankings on student data change
-                    renderStudentManagementTable(); // Re-render student management table
-                    renderBatchDisciplineTable(); // Re-render batch discipline table
-                    hideLoading();
-                }, error => {
-                    console.error("Error listening to students data:", error);
-                    document.getElementById('dbStatus').textContent = 'Disconnected';
-                    document.getElementById('dbStatus').className = 'badge bg-danger';
-                    hideLoading();
-                });
-
-                database.ref('history').on('value', snapshot => {
-                    const data = snapshot.val();
-                    responseHistory = data ? Object.keys(data).map(key => ({ ...data[key], firebaseKey: key })) : [];
-                    responseHistory.sort((a, b) => { // Ensure history is sorted by most recent
-                        const dateA = new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`);
-                        const dateB = new Date(`${b.date.split('/').reverse().join('-')}T${b.time}`);
-                        return dateB - dateA;
-                    });
-                    console.log("History data updated from Firebase (real-time)");
-                    refreshResponses(); // Re-render responses on history data change
-                    renderAdjudicatorTables(); // Re-render adjudicator tables
-                    hideLoading();
-                }, error => {
-                    console.error("Error listening to history data:", error);
-                    hideLoading();
-                });
-
-                database.ref('publicNotes').on('value', snapshot => {
-                    const data = snapshot.val();
-                    publicNotes = data ? Object.values(data) : [];
-                    console.log("Public notes updated from Firebase (real-time)");
-                    renderPublicNotes(); // Re-render public notes
-                    hideLoading();
-                }, error => {
-                    console.error("Error listening to public notes:", error);
-                    hideLoading();
-                });
-
-                if (currentUserUid) { // Only load personal notes if a user is logged in
-                    database.ref(`userNotes/${currentUserUid}`).on('value', snapshot => {
-                        const data = snapshot.val();
-                        notes = data ? Object.values(data) : [];
-                        console.log("Personal notes updated from Firebase (real-time)");
-                        renderNotesTable(); // Re-render personal notes
-                        hideLoading();
-                    }, error => {
-                        console.error("Error listening to personal notes:", error);
-                        hideLoading();
-                    });
-                }
-
-    </script>
+        </script>
 
 <script>
 function exportAllRankings() {
