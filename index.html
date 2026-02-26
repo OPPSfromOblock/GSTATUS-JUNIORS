@@ -3622,44 +3622,6 @@ try {
                 });
         }
 
-        // Function to reset all student points to zero and clear history
-        async function resetAllPointsAndHistory() {
-            try {
-                console.log("Starting reset of all points and history...");
-                
-                // Reset all student points to 0
-                students.forEach(student => {
-                    student.points = 0;
-                    student.manualGrade = null;
-                });
-
-                // Save updated students to Firebase
-                const studentsObject = {};
-                students.forEach(student => {
-                    studentsObject[student.id] = student;
-                });
-                await database.ref('students').set(studentsObject);
-                console.log("All student points reset to 0 in Firebase");
-
-                // Clear response history
-                responseHistory = [];
-                await database.ref('history').set(null);
-                console.log("Response history cleared from Firebase");
-
-                // Clear point history
-                await database.ref('pointHistory').set(null);
-                console.log("Point history cleared from Firebase");
-
-                // Clear change history
-                await database.ref('changeHistory').set(null);
-                console.log("Change history cleared from Firebase");
-
-                console.log("Reset complete!");
-            } catch (error) {
-                console.error("Error resetting all points and history:", error);
-            }
-        }
-
         // Function to update a single student's data
         async function updateStudentInFirebase(studentId, updatedFields) {
             showLoading();
@@ -10444,10 +10406,6 @@ filteredStudents.sort((a, b) => {
                     currentUserRole = currentUserData.role;
                     currentUserUid = currentUserData.uid;
                     updateUserInfo(currentUserData);
-                    
-                    // Reset all points to zero and clear history BEFORE initializing app
-                    await resetAllPointsAndHistory();
-                    
                     await initializeApp(); // Initialize app data and listeners after user is set
                 } else {
                     // No user is signed in with Firebase, clear session storage
