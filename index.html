@@ -9609,6 +9609,24 @@ filteredStudents.sort((a, b) => {
             const negativePointsSectionContainer = document.getElementById('negativePointsSectionContainer');
             const addPublicNoteBtn = document.getElementById('addPublicNoteBtn');
 
+            // Custom Points options to control
+            const customPointsOptions = document.querySelectorAll('option[value="custom"]');
+            const hideCustomPoints = () => {
+                customPointsOptions.forEach(opt => {
+                    opt.style.display = 'none';
+                    // If custom points was selected, reset the select
+                    if (opt.selected) {
+                        opt.parentElement.value = '';
+                        // Trigger change event to hide custom input fields
+                        const event = new Event('change');
+                        opt.parentElement.dispatchEvent(event);
+                    }
+                });
+            };
+            const showCustomPoints = () => {
+                customPointsOptions.forEach(opt => opt.style.display = '');
+            };
+
             // Canteen export buttons to control
             const exportToExcelBtn = document.getElementById('exportToExcel');
             const exportToGoogleSheetsBtn = document.getElementById('exportToGoogleSheets');
@@ -9648,6 +9666,7 @@ filteredStudents.sort((a, b) => {
                         
                                     if (role === "admin") {
                                         // Admin has access to everything including face scan and all canteen functions
+                                        showCustomPoints();
                                         tabsToControl.forEach(tabId => {
                                             const tabElement = document.getElementById(tabId);
                                             if (tabElement) {
@@ -9675,6 +9694,7 @@ filteredStudents.sort((a, b) => {
             } else if (role === "incharge") {
         // In-charge access: hide Rankings, History, Individual Data, Adjudicators, Face Scan
         // Allow: Home, Administration, Batch Discipline, Student Management, Notes, Canteen, Analytics
+        hideCustomPoints();
         const allowedTabs = [
             "home-tab", "administration-tab", "batch-discipline-tab",
             "student-management-tab", "notes-tab", "canteen-tab", "predictive-analytics-tab", "support-tab"
@@ -9708,6 +9728,7 @@ filteredStudents.sort((a, b) => {
 
             } else if (role === "teacher") {
                 // Teacher has access to specific tabs and only negative points
+                hideCustomPoints();
                 const allowedTabs = [
                     "home-tab", "administration-tab", "batch-discipline-tab",
                     "notes-tab" // Added notes-tab
