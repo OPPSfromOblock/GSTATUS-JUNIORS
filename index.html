@@ -2318,8 +2318,11 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <label for="dateFilter" class="form-label">Filter by Date:</label>
-                                        <input type="date" class="form-control" id="dateFilter" title="Filter history records by a specific date." aria-label="Filter history by date">
+                                        <label for="dateFilter" class="form-label">Filter by Date (Select to see specific day):</label>
+                                        <div class="input-group">
+                                            <input type="date" class="form-control" id="dateFilter" title="Filter history records by a specific date." aria-label="Filter history by date">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('dateFilter').value=''; refreshResponses();" title="Clear date to see all history">All Time</button>
+                                        </div>
                                     </div>
                                     <div class="col-md-4">
                                         <label for="historyModifiedByFilter" class="form-label">Filter by Modified By (Email/Name):</label>
@@ -3708,6 +3711,11 @@ try {
                 hideLoading();
                 throw new Error('Missing required fields in history entry');
             }
+
+            // Ensure timestamp is present for permanent storage and accurate sorting
+            if (!entry.timestamp) {
+                entry.timestamp = Date.now();
+            }
             
             // Simplified duplicate check: Only reject if the EXACT same timestamp and action exists
             // (Standard behavior for multiple deductions)
@@ -3722,7 +3730,8 @@ try {
                 if (historyEntry.date === entry.date && 
                     historyEntry.time === entry.time &&
                     historyEntry.action === entry.action &&
-                    historyEntry.pointsChanged === entry.pointsChanged) {
+                    historyEntry.pointsChanged === entry.pointsChanged &&
+                    historyEntry.timestamp === entry.timestamp) {
                     duplicateFound = true;
                 }
             });
@@ -6883,7 +6892,28 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
                 database.ref('history').on('value', snapshot => {
                     const data = snapshot.val();
                     responseHistory = data ? Object.keys(data).map(key => ({ ...data[key], firebaseKey: key })) : [];
-                    responseHistory.sort((a, b) => new Date(`${b.date.split('/').reverse().join('-')}T${b.time}`) - new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`));
+                    
+                    // Permanent sort logic: use numerical timestamp if available, else fallback to date/time parsing
+                    responseHistory.sort((a, b) => {
+                        if (a.timestamp && b.timestamp) {
+                            return b.timestamp - a.timestamp;
+                        }
+                        // Robust fallback parsing for legacy entries without timestamp
+                        const parseDate = (d, t) => {
+                            try {
+                                const parts = d.split('/');
+                                if (parts.length !== 3) return new Date(0);
+                                // Pad single digit days/months for ISO format
+                                const day = parts[0].padStart(2, '0');
+                                const month = parts[1].padStart(2, '0');
+                                const year = parts[2];
+                                return new Date(`${year}-${month}-${day}T${t || '00:00:00'}`);
+                            } catch (e) {
+                                return new Date(0);
+                            }
+                        };
+                        return parseDate(b.date, b.time) - parseDate(a.date, a.time);
+                    });
                     onDataLoaded();
                 }, error => {
                     console.error("Error listening to history data:", error);
@@ -7145,6 +7175,7 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
         await logNewStudentIds(selectedStudentIds, 'points update');
         
         const now = new Date();
+        const timestamp = now.getTime(); // Get millisecond timestamp for permanent sorting
         const date = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
         const time = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata' });
 
@@ -7167,6 +7198,7 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
                 updatePromises.push(addHistoryEntryToFirebase({
                     date,
                     time,
+                    timestamp, // Include numerical timestamp for permanent history and trend analysis
                     studentId: student.id,
                     name: student.name,
                     action: actionText,
@@ -7251,12 +7283,14 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
                     await updateStudentInFirebase(studentId, { manualGrade: normalizedGrade });
 
                     const now = new Date();
+                    const timestamp = now.getTime(); // Get millisecond timestamp for permanent record
                     const date = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
                     const time = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata' });
                     
                     await addHistoryEntryToFirebase({
                         date,
                         time,
+                        timestamp, // Include numerical timestamp for permanent history log
                         studentId: studentId,
                         name: studentName,
                         action: 'Rank Change',
@@ -8002,10 +8036,19 @@ function refreshRankings() {
             //     );
             // }
 
+            // Permanent sort logic: prioritize numerical timestamp for accuracy
             filteredHistory.sort((a, b) => {
-                const dateA = new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`);
-                const dateB = new Date(`${b.date.split('/').reverse().join('-')}T${b.time}`);
-                return dateB - dateA;
+                if (a.timestamp && b.timestamp) return b.timestamp - a.timestamp;
+                const parseDate = (d, t) => {
+                    try {
+                        const parts = d.split('/');
+                        const day = (parts[0] || '').padStart(2, '0');
+                        const month = (parts[1] || '').padStart(2, '0');
+                        const year = parts[2] || '';
+                        return new Date(`${year}-${month}-${day}T${t || '00:00:00'}`);
+                    } catch (e) { return new Date(0); }
+                };
+                return parseDate(b.date, b.time) - parseDate(a.date, a.time);
             });
 
             responseTable.innerHTML = '';
@@ -9001,6 +9044,7 @@ filteredStudents.sort((a, b) => {
             const batchDisciplineAdminEmail = currentUserEmail;
             const updatePromises = [];
             const now = new Date();
+            const timestamp = now.getTime(); // Added numerical timestamp for reliable sorting
             const date = now.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' });
             const time = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata' });
 
@@ -9097,6 +9141,7 @@ filteredStudents.sort((a, b) => {
                         updatePromises.push(addHistoryEntryToFirebase({
                             date,
                             time,
+                            timestamp, // Pass timestamp to ensure permanent and accurate history recording
                             studentId,
                             name: student.name,
                             action: actionText,
@@ -9426,9 +9471,17 @@ filteredStudents.sort((a, b) => {
 
             const studentHistory = responseHistory.filter(entry => entry.studentId === studentId)
                                                 .sort((a, b) => {
-                                                    const dateA = new Date(`${a.date.split('/').reverse().join('-')}T${a.time}`);
-                                                    const dateB = new Date(`${b.date.split('/').reverse().join('-')}T${b.time}`);
-                                                    return dateB - dateA;
+                                                    if (a.timestamp && b.timestamp) return b.timestamp - a.timestamp;
+                                                    const parseDate = (d, t) => {
+                                                        try {
+                                                            const parts = d.split('/');
+                                                            const day = (parts[0] || '').padStart(2, '0');
+                                                            const month = (parts[1] || '').padStart(2, '0');
+                                                            const year = parts[2] || '';
+                                                            return new Date(`${year}-${month}-${day}T${t || '00:00:00'}`);
+                                                        } catch (e) { return new Date(0); }
+                                                    };
+                                                    return parseDate(b.date, b.time) - parseDate(a.date, a.time);
                                                 });
 
             if (studentHistory.length === 0) {
@@ -9925,22 +9978,34 @@ filteredStudents.sort((a, b) => {
                 // Process history data
                 const dataByDate = {};
                 Object.values(history).forEach(entry => {
-                    if (!entry.timestamp) return;
-                    if (entry.timestamp < cutoffDate) return;
+                    // Use new numerical timestamp for precision, fallback to date parsing for legacy data
+                    const entryTime = entry.timestamp || (entry.date ? new Date(`${entry.date.split('/').reverse().join('-')}T${entry.time || '00:00:00'}`).getTime() : 0);
+                    if (!entryTime) return;
+                    if (cutoffDate !== 0 && entryTime < cutoffDate) return;
                     
-                    const date = new Date(entry.timestamp).toLocaleDateString();
+                    const dateObj = new Date(entryTime);
+                    const day = String(dateObj.getDate()).padStart(2, '0');
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const year = dateObj.getFullYear();
+                    const date = `${day}/${month}/${year}`;
+                    
                     if (!dataByDate[date]) {
                         dataByDate[date] = {
                             points: 0,
-                            count: 0
+                            count: 0,
+                            sortKey: entryTime
                         };
                     }
-                    dataByDate[date].points += parseFloat(entry.pointsChange || 0);
+                    dataByDate[date].points += parseFloat(entry.pointsChanged || entry.pointsChange || 0);
                     dataByDate[date].count++;
                 });
 
-                // Prepare chart data
-                const labels = Object.keys(dataByDate).sort();
+                // Prepare chart data - sort by date accurately
+                const labels = Object.keys(dataByDate).sort((a,b) => {
+                    const partsA = a.split('/');
+                    const partsB = b.split('/');
+                    return new Date(`${partsA[2]}-${partsA[1]}-${partsA[0]}`) - new Date(`${partsB[2]}-${partsB[1]}-${partsB[0]}`);
+                });
                 const pointsData = labels.map(date => dataByDate[date].points);
                 
                 // Calculate cumulative points
