@@ -2013,6 +2013,65 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- New: Administrative Password Protection -->
+                    <div class="card mb-4" id="adminPasswordCard" style="display: none;">
+                        <div class="card-header bg-dark text-white">
+                            <i class="fas fa-lock"></i> Administrative Access Required
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group">
+                                <input type="password" id="adminSectionPassword" class="form-control" placeholder="Enter Administrative Password">
+                                <button class="btn btn-primary" type="button" onclick="verifyAdminPassword()">Unlock Admin Sections</button>
+                            </div>
+                            <div id="adminPasswordError" class="text-danger mt-2 small" style="display: none;">Incorrect password. Please try again.</div>
+                        </div>
+                    </div>
+
+                    <div id="protectedAdminSections" style="display: none;">
+                        <!-- New: Batch Discipline Manual Control (Admin Only) -->
+                        <div class="card mb-4" id="batchDisciplineControlCard">
+                            <div class="card-header bg-warning text-dark">
+                                <i class="fas fa-clock"></i> Batch Discipline Manual Control
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="batchDisciplineOverrideToggle">
+                                    <label class="form-check-label fw-bold" for="batchDisciplineOverrideToggle">
+                                        Force Start Batch Discipline (Overrides Schedule)
+                                    </label>
+                                </div>
+                                <p class="text-muted small mt-2 mb-0">When enabled, the Batch Discipline tab will stay open until manually turned off, regardless of the Saturday schedule.</p>
+                            </div>
+                        </div>
+
+                        <!-- New: User Role Manager (Admin Only) -->
+                        <div class="card mb-4" id="roleManagerCard">
+                            <div class="card-header bg-primary text-white">
+                                <i class="fas fa-user-shield"></i> User Role Manager
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Role</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="roleManagerTableBody">
+                                            <!-- Users will be loaded here via JavaScript -->
+                                            <tr>
+                                                <td colspan="4" class="text-center">Loading users...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Removed Discipline Review Tab Content -->
@@ -3218,6 +3277,8 @@ let app;
 let auth;
 let database;
 let storage;
+let batchDisciplineOverride = false; // Manual override for Batch Discipline
+let isAdminUnlocked = false; // Track if admin sections are unlocked
 
 try {
     if (firebase.apps.length === 0) {
@@ -6826,6 +6887,8 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
 
                     document.getElementById('dbStatus').textContent = 'Connected';
                     document.getElementById('dbStatus').className = 'badge bg-success';
+                    
+                    initBatchDisciplineOverrideListener(); // Initialize once here
                     checkDisciplineTabAccess();
                     checkUserRole(currentUserRole);
                     updateBatchDisciplineTimer();
@@ -9507,7 +9570,7 @@ filteredStudents.sort((a, b) => {
                 // Remove existing event listeners to prevent multiple bindings
                 batchDisciplineTabLink.removeEventListener('click', preventBatchDisciplineClick);
 
-                if (dayOfWeek === 6 && currentHour >= startTime && currentHour < endTime) { // Saturday, 7 AM to 10 PM
+                if (batchDisciplineOverride || (dayOfWeek === 6 && currentHour >= startTime && currentHour < endTime)) { // Manual override OR (Saturday, 7 AM to 10 PM)
                     batchDisciplineTabLink.classList.remove('disabled');
                 } else {
                     batchDisciplineTabLink.classList.add('disabled');
@@ -9517,6 +9580,8 @@ filteredStudents.sort((a, b) => {
         }
 
         function preventBatchDisciplineClick(event) {
+            if (batchDisciplineOverride) return; // Don't prevent if override is on
+
             event.preventDefault();
             const today = new Date();
             const dayOfWeek = today.getDay();
@@ -9525,9 +9590,9 @@ filteredStudents.sort((a, b) => {
             const endTime = 22;
 
             if (dayOfWeek !== 6) {
-                alert("The 'Batch Discipline' tab is only accessible on Saturdays.");
+                alert("The 'Batch Discipline' tab is only accessible on Saturdays. (Admin manual override is currently OFF)");
             } else if (currentHour < startTime || currentHour >= endTime) {
-                alert("The 'Batch Discipline' tab is only accessible between 7 AM and 10 PM on Saturdays.");
+                alert("The 'Batch Discipline' tab is only accessible between 7 AM and 10 PM on Saturdays. (Admin manual override is currently OFF)");
             }
         }
 
@@ -9584,7 +9649,7 @@ filteredStudents.sort((a, b) => {
 
         function checkUserRole(role) {
             currentUserRole = role;
-
+            
             const tabsToControl = [
                 "rankings-tab", "responses-tab", "student-management-tab",
                 "administration-tab", "batch-discipline-tab",
@@ -9638,6 +9703,12 @@ filteredStudents.sort((a, b) => {
                                     if (negativePointsSectionContainer) negativePointsSectionContainer.style.display = 'none';
                                     if (addPublicNoteBtn) addPublicNoteBtn.style.display = 'none'; // Hide public note add button by default
                         
+                                    // Hide new admin cards by default
+                                    const adminPasswordCard = document.getElementById('adminPasswordCard');
+                                    const protectedAdminSections = document.getElementById('protectedAdminSections');
+                                    if (adminPasswordCard) adminPasswordCard.style.display = 'none';
+                                    if (protectedAdminSections) protectedAdminSections.style.display = 'none';
+
                                     // Hide canteen export buttons by default
                                     if (exportToExcelBtn) exportToExcelBtn.style.display = 'none';
                                     if (exportToGoogleSheetsBtn) exportToGoogleSheetsBtn.style.display = 'none';
@@ -9676,11 +9747,29 @@ filteredStudents.sort((a, b) => {
                                                             manageCanteenDatesCard.style.display = 'block';
                                                             renderCanteenManageTable();
                                                         }
-                                                        if (manualCanteenAddCard) manualCanteenAddCard.style.display = 'block'; // Show the card
-                                                        if (canteenRemoveSection) canteenRemoveSection.style.display = 'block'; // Show remove section ONLY for admin
-            } else if (role === "incharge") {
-        // In-charge access: hide Rankings, History, Individual Data, Adjudicators, Face Scan
-        // Allow: Home, Administration, Batch Discipline, Student Management, Notes, Canteen, Analytics
+                                                                                                        if (manualCanteenAddCard) manualCanteenAddCard.style.display = 'block'; // Show the card
+                                                                                                        if (canteenRemoveSection) canteenRemoveSection.style.display = 'block'; // Show remove section ONLY for admin
+                                                        
+                                                                                                        // New: Show Password Protection for Admin
+                                                                                                        const adminPasswordCard = document.getElementById('adminPasswordCard');
+                                                                                                        const protectedAdminSections = document.getElementById('protectedAdminSections');
+                                                                                                        
+                                                                                                        if (isAdminUnlocked) {
+                                                                                                            if (protectedAdminSections) protectedAdminSections.style.display = 'block';
+                                                                                                            if (adminPasswordCard) adminPasswordCard.style.display = 'none';
+                                                                                                            renderRoleManager();
+                                                                                                        } else {
+                                                                                                            if (adminPasswordCard) adminPasswordCard.style.display = 'block';
+                                                                                                            if (protectedAdminSections) protectedAdminSections.style.display = 'none';
+                                                                                                        }
+                                                                                                    } else if (role === "incharge") {
+                                                                        // New: Hide Role Manager and Batch Discipline Control for Incharge
+                                                                        const bdcCard = document.getElementById('batchDisciplineControlCard');
+                                                                        const rmCard = document.getElementById('roleManagerCard');
+                                                                        if (bdcCard) bdcCard.style.display = 'none';
+                                                                        if (rmCard) rmCard.style.display = 'none';
+
+        // In-charge access: hide Rankings, History, Individual Data, Adjudicators, Face Scan        // Allow: Home, Administration, Batch Discipline, Student Management, Notes, Canteen, Analytics
         hideCustomPoints();
         const allowedTabs = [
             "home-tab", "administration-tab", "batch-discipline-tab",
@@ -9747,13 +9836,163 @@ filteredStudents.sort((a, b) => {
             }
             // Re-check discipline tab access after role-based display is set
             checkDisciplineTabAccess();
-            renderPublicNotes(); // Re-render public notes to update button visibility
         }
+
+        // ===== NEW ADMINISTRATIVE FUNCTIONS (Role Manager & Batch Discipline Override) =====
+
+        function verifyAdminPassword() {
+            const passwordInput = document.getElementById('adminSectionPassword');
+            const errorElement = document.getElementById('adminPasswordError');
+            const password = passwordInput.value;
+
+            if (password === 'VIBGYOR') {
+                isAdminUnlocked = true;
+                errorElement.style.display = 'none';
+                checkUserRole(currentUserRole); // Refresh UI
+            } else {
+                errorElement.style.display = 'block';
+                passwordInput.value = '';
+            }
+        }
+
+        // Initialize listener for Batch Discipline Override from Firebase
+        let isOverrideListenerInitialized = false;
+        function initBatchDisciplineOverrideListener() {
+            if (isOverrideListenerInitialized) return;
+            
+            database.ref('appSettings/batchDisciplineOverride').on('value', (snapshot) => {
+                batchDisciplineOverride = snapshot.val() || false;
+                const toggle = document.getElementById('batchDisciplineOverrideToggle');
+                if (toggle) {
+                    toggle.checked = batchDisciplineOverride;
+                }
+                // Refresh access and UI
+                checkDisciplineTabAccess();
+                updateBatchDisciplineTimer();
+            });
+
+            // Set up the toggle listener once
+            const toggle = document.getElementById('batchDisciplineOverrideToggle');
+            if (toggle) {
+                toggle.addEventListener('change', async (e) => {
+                    const newValue = e.target.checked;
+                    try {
+                        await database.ref('appSettings/batchDisciplineOverride').set(newValue);
+                    } catch (error) {
+                        console.error("Error updating Batch Discipline override:", error);
+                        alert("Failed to update override setting. Check permissions.");
+                        e.target.checked = !newValue; // Revert
+                    }
+                });
+            }
+
+            isOverrideListenerInitialized = true;
+        }
+
+        // Render the Role Manager table
+        async function renderRoleManager() {
+            const tableBody = document.getElementById('roleManagerTableBody');
+            if (!tableBody) return;
+
+            try {
+                const snapshot = await database.ref('userRoles').once('value');
+                const users = snapshot.val();
+                
+                tableBody.innerHTML = '';
+                
+                if (!users) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No users found in database.</td></tr>';
+                    return;
+                }
+
+                Object.entries(users).forEach(([uid, userData]) => {
+                    const tr = document.createElement('tr');
+                    
+                    const name = userData.name || 'N/A';
+                    const email = userData.email || 'N/A';
+                    const role = userData.role || 'teacher';
+                    
+                    tr.innerHTML = `
+                        <td>${name}</td>
+                        <td>${email}</td>
+                        <td>
+                            <select class="form-select form-select-sm role-change-select" data-uid="${uid}">
+                                <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
+                                <option value="incharge" ${role === 'incharge' ? 'selected' : ''}>Incharge</option>
+                                <option value="teacher" ${role === 'teacher' ? 'selected' : ''}>Teacher</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger btn-sm remove-user-btn" data-uid="${uid}" title="Remove user from Role Manager">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                // Add event listeners for role change
+                document.querySelectorAll('.role-change-select').forEach(select => {
+                    select.addEventListener('change', async (e) => {
+                        const uid = e.target.dataset.uid;
+                        const newRole = e.target.value;
+                        if (confirm(`Are you sure you want to change the role of this user to ${newRole}?`)) {
+                            try {
+                                await database.ref(`userRoles/${uid}`).update({ role: newRole });
+                                alert('Role updated successfully.');
+                                // If current user changed their own role, re-apply access
+                                if (uid === currentUserUid) {
+                                    checkUserRole(newRole);
+                                }
+                            } catch (error) {
+                                console.error("Error updating role:", error);
+                                alert("Failed to update role.");
+                                renderRoleManager(); // Refresh to original
+                            }
+                        } else {
+                            renderRoleManager(); // Refresh to original
+                        }
+                    });
+                });
+
+                // Add event listeners for removal
+                document.querySelectorAll('.remove-user-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const uid = e.currentTarget.dataset.uid;
+                        if (confirm('Are you sure you want to remove this user from the Role Manager? This will not delete their account, but they will lose their assigned role (defaulting back to Teacher on next login).')) {
+                            try {
+                                await database.ref(`userRoles/${uid}`).remove();
+                                alert('User removed from Role Manager.');
+                                renderRoleManager();
+                                // If current user removed themselves
+                                if (uid === currentUserUid) {
+                                    checkUserRole('teacher');
+                                }
+                            } catch (error) {
+                                console.error("Error removing user:", error);
+                                alert("Failed to remove user.");
+                            }
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error fetching users for Role Manager:", error);
+                tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading users.</td></tr>';
+            }
+        }
+
+        // ===== END NEW ADMINISTRATIVE FUNCTIONS =====
 
         // New function for Batch Discipline Timer
         function updateBatchDisciplineTimer() {
             const timerMessageElement = document.getElementById('batchDisciplineTimerMessage');
             if (!timerMessageElement) return;
+
+            if (batchDisciplineOverride) {
+                timerMessageElement.innerHTML = `<span class="text-success">Batch Discipline is OPEN! (Manual Override Active)</span>`;
+                return;
+            }
 
             const now = new Date();
             const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
