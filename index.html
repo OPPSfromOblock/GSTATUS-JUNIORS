@@ -8,44 +8,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-storage.js"></script>
 
-    <!-- Firebase SDK - Local fallback -->
-    <script>
-        // Mock Firebase for testing when external resources are blocked
-        // This runs after CDN scripts. If CDN loaded, firebase is defined.
-        // If CDN failed (offline/blocked), firebase is undefined, so we mock it.
-        if (typeof firebase === 'undefined') {
-            console.log('Firebase blocked by client, using mock implementation');
-            window.firebase = {
-                initializeApp: () => ({
-                    database: () => ({
-                        ref: () => ({
-                            once: () => Promise.resolve({val: () => ({})}),
-                            on: () => {},
-                            set: () => Promise.resolve(),
-                            update: () => Promise.resolve(),
-                            push: () => ({key: 'mock_' + Date.now()})
-                        }),
-                        orderByChild: () => ({
-                            equalTo: () => ({
-                                once: () => Promise.resolve({forEach: () => {}})
-                            })
-                        })
-                    })
-                }),
-                auth: () => ({
-                    signInWithEmailAndPassword: () => Promise.resolve({user: {uid: 'mock_uid', email: 'test@test.com'}}),
-                    createUserWithEmailAndPassword: () => Promise.resolve({user: {uid: 'mock_uid', email: 'test@test.com'}}),
-                    signInWithPopup: () => Promise.resolve({user: {uid: 'mock_uid', email: 'test@test.com'}}),
-                    signOut: () => Promise.resolve(),
-                    GoogleAuthProvider: () => {}
-                }),
-                analytics: () => {}
-            };
-        }
-    </script>
-
-
-
     <!-- SheetJS for Excel parsing -->
     <script>
         // Fallback for blocked CDN resources
@@ -7024,7 +6986,7 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
         
         // Function to log only new IDs (not full copied lists)
         async function logNewStudentIds(studentIds, action) {
-            const historySnapshot = await database.ref('history').limitToLast(100).once('value');
+            const historySnapshot = await database.ref('history').once('value');
             const recentIds = new Set();
             
             historySnapshot.forEach(childSnapshot => {
@@ -7185,20 +7147,37 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
         for (const studentId of selectedStudentIds) {
             const student = students.find(s => s.id === studentId);
             if (student) {
-                // Ensure oldPoints is a number to prevent NaN
-                const oldPoints = Number(student.points) || 0;
+                // FETCH REAL-TIME DATA: To be absolutely sure, we use the current local value 
+                // but we also check if it's a valid number.
+                let oldPoints = 0;
+                if (student.points !== undefined && student.points !== null) {
+                    oldPoints = Number(student.points);
+                    if (isNaN(oldPoints)) {
+                        console.warn(`Student ${studentId} had invalid points (${student.points}), resetting to 0 for this update.`);
+                        oldPoints = 0;
+                    }
+                }
+                
                 const newPoints = oldPoints + points;
                 studentNames.push(student.name);
 
-                // Update student points in Firebase - use firebaseKey if available for more reliable update
+                // Update student points in Firebase
                 const targetId = student.firebaseKey || student.id;
-                updatePromises.push(updateStudentInFirebase(targetId, { points: newPoints }));
+                
+                // Use update with error handling
+                const pointUpdatePromise = database.ref(`students/${targetId}`).update({ points: newPoints })
+                    .catch(err => {
+                        console.error(`Firebase error updating points for ${studentId}:`, err);
+                        throw new Error(`Connection failed for ${student.name}. Points NOT saved.`);
+                    });
+                
+                updatePromises.push(pointUpdatePromise);
 
                 // Add history entry to Firebase
-                updatePromises.push(addHistoryEntryToFirebase({
+                const historyPromise = addHistoryEntryToFirebase({
                     date,
                     time,
-                    timestamp, // Include numerical timestamp for permanent history and trend analysis
+                    timestamp,
                     studentId: student.id,
                     name: student.name,
                     action: actionText,
@@ -7206,7 +7185,12 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
                     oldPoints: oldPoints,
                     newPoints: newPoints,
                     modifiedBy: modifiedBy
-                }));
+                }).catch(err => {
+                    console.error(`Firebase error adding history for ${studentId}:`, err);
+                    // We don't throw here to allow other students to finish, but we log it
+                });
+                
+                updatePromises.push(historyPromise);
             } else {
                 console.warn(`Student with ID ${studentId} not found in local data.`);
             }
@@ -8544,14 +8528,17 @@ function refreshRankings() {
                 floor: document.getElementById('newStudentFloor').value.trim(),
                 class: document.getElementById('newStudentClass').value.trim(),
                 section: document.getElementById('newStudentSection').value.trim(),
-                // Only set default points/active if adding new, otherwise preserve or update? 
-                // For edit, we typically update fields. updateStudentInFirebase handles partial updates.
-                // But here we might want to ensure we don't overwrite points with 0.
+                // We DON'T include points here for edits to prevent accidental wipes.
+                // updateStudentInFirebase will only update the fields we provide.
             };
             
             if (!isEdit) {
-                newStudent.points = 0;
+                newStudent.points = 0; // Only new students start at 0
                 newStudent.active = true;
+            } else {
+                // For edit mode, we want to make sure we don't accidentally send 'points: 0'
+                // if it's not actually defined in the form.
+                delete newStudent.points; 
             }
 
             if (!newStudent.id || !newStudent.name || !newStudent.room || !newStudent.floor) {
@@ -10800,7 +10787,16 @@ filteredStudents.sort((a, b) => {
                     const studentFloor = String(row['Floor'] || '').trim();
                     const studentClass = String(row['Class'] || '').trim();
                     const studentSection = String(row['Section'] || '').trim();
-                    const studentPoints = parseInt(row['Points'] || 0);
+                    const studentPointsInExcel = row['Points'] !== undefined ? parseInt(row['Points']) : 0;
+                    
+                    // CRITICAL: Preserve existing points if student already exists
+                    // and Excel row has 0 points (likely a skeleton list).
+                    let studentPoints = studentPointsInExcel;
+                    const existingStudent = students.find(s => s.id === studentId);
+                    
+                    if (existingStudent && studentPointsInExcel === 0) {
+                        studentPoints = Number(existingStudent.points) || 0;
+                    }
 
                     if (!studentId || !studentName || !studentRoom || !studentFloor) {
                         console.warn(`Skipping row due to missing required fields: ${JSON.stringify(row)}`);
