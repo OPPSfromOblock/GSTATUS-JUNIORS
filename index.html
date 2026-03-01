@@ -7002,17 +7002,7 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
             }
         }
 
-        function initializeEventListeners() {
-            document.getElementById('positiveAction').addEventListener('change', function() {
-                document.getElementById('examPercentage').style.display = this.value === 'exam' ? 'block' : 'none';
-                document.getElementById('customPositiveInput').style.display = this.value === 'custom' ? 'block' : 'none';
-            });
-
-            document.querySelector('[name="negativeAction"]').addEventListener('change', function() {
-                document.getElementById('customNegativeInput').style.display = this.value === 'custom' ? 'block' : 'none';
-            });
-
-            // Function to validate student IDs and reject duplicates before processing
+        // Function to validate student IDs and reject duplicates before processing
         async function validateStudentIds(studentIds) {
             if (!Array.isArray(studentIds) || studentIds.length === 0) {
                 throw new Error('No student IDs provided');
@@ -7064,6 +7054,16 @@ Your Firebase setup is ready for GitHub Pages deployment!`);
                 console.log(`No new student IDs for ${action} - all recently processed`);
             }
         }
+
+        function initializeEventListeners() {
+            document.getElementById('positiveAction').addEventListener('change', function() {
+                document.getElementById('examPercentage').style.display = this.value === 'exam' ? 'block' : 'none';
+                document.getElementById('customPositiveInput').style.display = this.value === 'custom' ? 'block' : 'none';
+            });
+
+            document.querySelector('[name="negativeAction"]').addEventListener('change', function() {
+                document.getElementById('customNegativeInput').style.display = this.value === 'custom' ? 'block' : 'none';
+            });
 
             document.getElementById('pointsForm').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -8986,8 +8986,11 @@ filteredStudents.sort((a, b) => {
                                         entry.date === today.toLocaleDateString('en-GB', { timeZone: 'Asia/Kolkata' })
                                     );
                                     const isDisabled = existingEntryToday; // Disable if entry exists for today
+                                    
+                                    const pointsAwarded = starValue * 3;
+
                                     return `<input type="radio" id="batch-star-${student.id}-${starValue}" name="batch-rating-${student.id}" value="${starValue}" ${isDisabled ? 'disabled' : ''} />
-                                            <label for="batch-star-${student.id}-${starValue}" title="${starValue} stars">&#9733;</label>`;
+                                            <label for="batch-star-${student.id}-${starValue}" title="${starValue} stars (+${pointsAwarded} points)">&#9733;</label>`;
                                 }).join('')}
                             </div>
                         </td>
@@ -9158,25 +9161,8 @@ filteredStudents.sort((a, b) => {
                     const newRating = selectedRatingInput ? parseInt(selectedRatingInput.value) : null;
 
                     if (newRating !== null) {
-                        let pointsAwarded = 0;
-                        let actionText = '';
-
-                        if (newRating === 5) {
-                            pointsAwarded = 10;
-                            actionText = 'Batch Discipline Review: Excellent (+10)';
-                        } else if (newRating === 4) {
-                            pointsAwarded = 5;
-                            actionText = 'Batch Discipline Review: Good (+5)';
-                        } else if (newRating === 3) {
-                            pointsAwarded = 0;
-                            actionText = 'Batch Discipline Review: Satisfactory (0)';
-                        } else if (newRating === 2) {
-                            pointsAwarded = -5;
-                            actionText = 'Batch Discipline Review: Needs Improvement (-5)';
-                        } else if (newRating === 1) {
-                            pointsAwarded = -10;
-                            actionText = 'Batch Discipline Review: Poor (-10)';
-                        }
+                        let pointsAwarded = newRating * 3;
+                        let actionText = `Batch Discipline Review: ${newRating} Stars (+${pointsAwarded})`;
 
                         const oldPoints = Number(student.points) || 0;
                         const newPoints = oldPoints + pointsAwarded;
